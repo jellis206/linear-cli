@@ -1394,31 +1394,29 @@ async fn create_issue(
             )?;
         } else {
             println!("{}", "[DRY RUN] Would create issue:".yellow().bold());
-            println!("  Title:       {}", final_title);
-            println!("  Team:        {} ({})", final_team, team_id);
+            println!("  Title:       {}", safe_terminal_value(&final_title));
+            println!(
+                "  Team:        {} ({})",
+                safe_terminal_value(final_team),
+                safe_terminal_value(&team_id)
+            );
             if let Some(ref desc) = description {
-                let preview: String = desc.chars().take(50).collect();
-                let preview = if preview.len() < desc.len() {
-                    format!("{}...", preview)
-                } else {
-                    preview
-                };
-                println!("  Description: {}", preview);
+                println!("  Description: {}", truncate(desc, Some(50)));
             }
             if let Some(p) = priority {
                 println!("  Priority:    {}", p);
             }
             if let Some(ref s) = state {
-                println!("  State:       {}", s);
+                println!("  State:       {}", safe_terminal_value(s));
             }
             if let Some(ref a) = assignee {
-                println!("  Assignee:    {}", a);
+                println!("  Assignee:    {}", safe_terminal_value(a));
             }
             if !labels.is_empty() {
-                println!("  Labels:      {}", labels.join(", "));
+                println!("  Labels:      {}", safe_terminal_value(&labels.join(", ")));
             }
             if let Some(ref d) = due {
-                println!("  Due:         {}", d);
+                println!("  Due:         {}", safe_terminal_value(d));
             }
             if let Some(e) = estimate {
                 println!("  Estimate:    {}", e);
@@ -2478,6 +2476,14 @@ mod tests {
         assert_eq!(
             build_issue_assignee_filter(name),
             serde_json::json!({ "name": { "eqIgnoreCase": name } })
+        );
+    }
+
+    #[test]
+    fn dry_run_text_values_strip_terminal_controls() {
+        assert_eq!(
+            safe_terminal_value("Q1\u{1b}]52;c;ZXZpbA==\u{7} Roadmap"),
+            "Q1 Roadmap"
         );
     }
 }

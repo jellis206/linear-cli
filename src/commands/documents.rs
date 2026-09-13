@@ -428,19 +428,6 @@ async fn create_document(
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_safe_terminal_value_removes_escape_sequences() {
-        assert_eq!(
-            safe_terminal_value("bad\u{1b}]52;c;ZXZpbA==\u{7}title"),
-            "badtitle"
-        );
-    }
-}
-
 #[allow(clippy::too_many_arguments)]
 async fn update_document(
     id: &str,
@@ -578,4 +565,17 @@ async fn delete_document(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_safe_terminal_value_removes_escape_sequences() {
+        assert_eq!(
+            safe_terminal_value("bad\u{1b}]52;c;ZXZpbA==\u{7}title"),
+            "badtitle"
+        );
+    }
 }
