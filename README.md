@@ -1,7 +1,7 @@
 # linear-cli
 
 [![Crates.io](https://img.shields.io/crates/v/linear-cli)](https://crates.io/crates/linear-cli)
-[![CI](https://github.com/Finesssee/linear-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Finesssee/linear-cli/actions/workflows/ci.yml)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/nesszer/linear-cli/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/nesszer/linear-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 
@@ -20,11 +20,11 @@ cargo install linear-cli
 cargo install linear-cli --features secure-storage
 
 # From source
-git clone https://github.com/Finesssee/linear-cli.git
+git clone https://github.com/nesszer/linear-cli.git
 cd linear-cli && cargo build --release
 ```
 
-Pre-built binaries for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64) are available at [GitHub Releases](https://github.com/Finesssee/linear-cli/releases). [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) downloads these automatically.
+Pre-built binaries for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64) are available at [GitHub Releases](https://github.com/nesszer/linear-cli/releases). [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) downloads these automatically.
 
 ## Updating
 
@@ -595,10 +595,10 @@ linear-cli includes Agent Skills for AI coding assistants (Claude Code, Cursor, 
 
 ```bash
 # Install all skills
-npx skills add Finesssee/linear-cli
+npx skills add nesszer/linear-cli
 
 # Install specific skill
-npx skills add Finesssee/linear-cli --skill linear-workflow
+npx skills add nesszer/linear-cli --skill linear-workflow
 ```
 
 38 skills covering issues, git, planning, organization, operations, tracking, and advanced API usage. Skills are 10-50x more token-efficient than MCP tools. See [docs/skills.md](docs/skills.md) for details.

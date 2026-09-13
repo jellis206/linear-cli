@@ -1,12 +1,12 @@
 [package]
 name = "linear-cli"
-version = "0.3.26"
+version = "0.3.28"
 edition = "2021"
 description = "A powerful CLI for Linear.app - manage issues, projects, cycles, and more from your terminal"
 authors = ["scwrcd"]
 license = "MIT"
-repository = "https://github.com/Finesssee/linear-cli"
-homepage = "https://github.com/Finesssee/linear-cli"
+repository = "https://github.com/nesszer/linear-cli"
+homepage = "https://github.com/nesszer/linear-cli"
 readme = "README.md"
 keywords = ["linear", "cli", "project-management", "issues", "productivity"]
 categories = ["command-line-utilities", "development-tools"]

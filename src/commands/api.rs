@@ -4,7 +4,7 @@ use serde_json::{json, Map, Value};
 use std::io::{self, BufRead, IsTerminal};
 
 use crate::api::LinearClient;
-use crate::output::{print_json_owned, OutputOptions};
+use crate::output::{print_json_owned, reject_unsupported_dry_run, OutputOptions};
 use crate::pagination::{paginate_nodes, PaginationOptions};
 
 #[derive(Subcommand)]
@@ -73,6 +73,7 @@ pub async fn handle(cmd: ApiCommands, output: &OutputOptions) -> Result<()> {
             .await
         }
         ApiCommands::Mutate { query, variables } => {
+            reject_unsupported_dry_run(output.dry_run, "api mutate")?;
             let resolved = resolve_query_source(query)?;
             run_mutate(&resolved, &variables, output).await
         }

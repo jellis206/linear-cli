@@ -7,7 +7,7 @@ When using AI coding assistants (Claude Code, Cursor, Windsurf, Copilot, OpenAI 
 The easiest way to integrate linear-cli with your AI agent:
 
 ```bash
-npx skills add Finesssee/linear-cli
+npx skills add nesszer/linear-cli
 ```
 
 This installs **27 Agent Skills** covering all CLI features. Your agent automatically loads the right skill based on the task.

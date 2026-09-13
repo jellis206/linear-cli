@@ -1424,7 +1424,7 @@ async fn create_issue(
                 println!("  Estimate:    {}", e);
             }
             if let Some(ref p) = project {
-                println!("  Project:     {}", p);
+                println!("  Project:     {}", safe_terminal_value(p));
             }
         }
         return Ok(());

@@ -1358,6 +1358,37 @@ fn test_dry_run_output() {
 }
 
 #[test]
+fn test_unsupported_dry_run_fails_closed_before_auth() {
+    let cases: [&[&str]; 2] = [
+        &[
+            "relations",
+            "add",
+            "LIN-1",
+            "-r",
+            "blocks",
+            "LIN-2",
+            "--dry-run",
+        ],
+        &["bulk", "assign", "me", "-i", "LIN-1", "--dry-run"],
+    ];
+
+    for args in cases {
+        let (code, stdout, stderr) = run_cli(args);
+        assert_ne!(code, 0, "unsupported dry-run must fail: {args:?}");
+        let combined = format!("{stdout}\n{stderr}");
+        assert!(
+            combined.contains("--dry-run is not supported")
+                && combined.contains("no changes were made"),
+            "dry-run rejection should be explicit: args={args:?}, output={combined:?}"
+        );
+        assert!(
+            !combined.contains("No API key configured"),
+            "rejection should happen before auth: args={args:?}, output={combined:?}"
+        );
+    }
+}
+
+#[test]
 fn test_json_output_format() {
     // --output json should be accepted without error on help
     let (code, stdout, _stderr) = run_cli(&["--output", "json", "--help"]);

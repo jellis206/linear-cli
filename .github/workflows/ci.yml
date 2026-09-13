@@ -1,25 +1,12 @@
 name: CI
 
-# Thin PR Check for the linear-cli repo. Runs only on Blacksmith's Linux pool
-# so the shared Blacksmith free tier is not burned by macOS/Windows builds.
-# See .github/CI.md and docs/adr/0001-pr-check-blacksmith-local-release.md for
-# why this is Linux-only and how the budget modes gate it.
+# Legacy fallback for the linear-cli repo. CircleCI is canonical; this workflow
+# is intentionally manual-dispatch only during the migration.
 
 on:
-  push:
-    branches: [master, main]
-    paths-ignore:
-      - "docs/**"
-      - "skills/**"
-      - "**/*.md"
-      - "LICENSE"
-  pull_request:
-    branches: [master, main]
-    paths-ignore:
-      - "docs/**"
-      - "skills/**"
-      - "**/*.md"
-      - "LICENSE"
+  # CircleCI is canonical; keep this as an explicitly dispatched fallback
+  # while branch-protection checks are migrated.
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
