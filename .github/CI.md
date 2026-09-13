@@ -20,9 +20,11 @@ Push a tag matching `vX.Y.Z`. CircleCI builds these five archives:
 - `aarch64-apple-darwin`
 
 The release verifier fails closed unless the tag matches `Cargo.toml`, all
-five archives are present, each archive contains the expected binary, and each
-binary reports the tagged version. The GitHub release upload and crates.io
-publish jobs run only after this gate.
+five archives are present, each archive contains only the expected root binary,
+the target formats match, and native binaries report the tagged version.
+Cross-target jobs carry an independently checked version proof from the tagged
+source. The GitHub release upload and crates.io publish jobs run only after
+this gate.
 
 ## Credentials and plan prerequisites
 

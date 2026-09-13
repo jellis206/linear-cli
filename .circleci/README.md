@@ -18,8 +18,9 @@ Push an annotated or lightweight tag matching `vX.Y.Z`. The release workflow:
    - `x86_64-apple-darwin`
    - `aarch64-apple-darwin`
 2. Verifies that the tag version matches `Cargo.toml`.
-3. Requires exactly those five archives, checks each binary's `--version`,
-   and generates `SHA256SUMS` plus `release-manifest.json`.
+3. Requires exactly those five archives, checks their archive roots and target
+   formats, verifies native Linux/Windows binaries with `--version`, and
+   generates `SHA256SUMS` plus `release-manifest.json`.
 4. Uploads the verified assets to the GitHub release.
 5. Publishes the matching crate version to crates.io.
 

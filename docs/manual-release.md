@@ -18,8 +18,10 @@ announce a release with a partial asset set.
    - `linear-cli-x86_64-apple-darwin.tar.gz`
    - `linear-cli-aarch64-apple-darwin.tar.gz`
 
-4. Verify every binary with `linear-cli --version`, and verify that its output
-   equals `linear-cli <version>`.
+4. Verify native binaries with `linear-cli --version`, and verify that their
+   output equals `linear-cli <version>`. For cross-target builds, verify the
+   target format with `file` and preserve the version from the tagged
+   `Cargo.toml` build.
 5. Create/upload the GitHub release only after all five artifacts pass.
 6. Publish the same version to crates.io with `cargo publish --locked`.
 
