@@ -14,10 +14,27 @@ use crate::error::{CliError, ErrorKind};
 use crate::pagination::{paginate_nodes, PaginationOptions};
 use crate::retry::{with_retry, RetryConfig};
 use crate::text::is_uuid;
-use std::sync::OnceLock;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    OnceLock,
+};
 
 const LINEAR_API_URL: &str = "https://api.linear.app/graphql";
 const LINEAR_UPLOADS_HOST: &str = "uploads.linear.app";
+
+static DRY_RUN_MODE: AtomicBool = AtomicBool::new(false);
+
+/// Set the process-wide dry-run mode before dispatching a command.
+pub fn set_dry_run(enabled: bool) {
+    DRY_RUN_MODE.store(enabled, Ordering::Relaxed);
+}
+
+fn mutation_allowed(dry_run: bool) -> Result<()> {
+    if dry_run {
+        anyhow::bail!("--dry-run is not supported for this mutation; no changes were made");
+    }
+    Ok(())
+}
 
 /// Configuration for generic ID resolution
 struct ResolverConfig<'a> {
@@ -747,6 +764,7 @@ impl LinearClient {
     }
 
     pub async fn mutate(&self, mutation: &str, variables: Option<Value>) -> Result<Value> {
+        mutation_allowed(DRY_RUN_MODE.load(Ordering::Relaxed))?;
         // Mutations must not be retried to avoid duplicate side effects
         self.query_once(mutation, variables).await
     }
@@ -947,6 +965,12 @@ mod tests {
         let body = json!({ "body": "<html>502</html>" });
         let refined = refine_http_error(http_err, &body);
         assert_eq!(refined.kind, ErrorKind::NotFound);
+    }
+
+    #[test]
+    fn dry_run_blocks_unhandled_mutations() {
+        let error = mutation_allowed(true).unwrap_err();
+        assert!(error.to_string().contains("no changes were made"));
     }
 
     #[test]

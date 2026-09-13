@@ -744,16 +744,6 @@ async fn remote_get_template(id: &str, output: &OutputOptions) -> Result<()> {
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_safe_terminal_value_removes_escape_sequences() {
-        assert_eq!(safe_terminal_value("bad\u{1b}[31mname\u{1b}[0m"), "badname");
-    }
-}
-
 async fn remote_create_template(
     name: &str,
     template_type: &str,
@@ -903,4 +893,14 @@ async fn remote_delete_template(id: &str, force: bool, output: &OutputOptions) -
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_safe_terminal_value_removes_escape_sequences() {
+        assert_eq!(safe_terminal_value("bad\u{1b}[31mname\u{1b}[0m"), "badname");
+    }
 }

@@ -1,0 +1,374 @@
+version: 2.1
+
+commands:
+  install-rust:
+    description: Install the stable Rust toolchain and CI components.
+    steps:
+      - run:
+          name: Install Rust
+          command: |
+            set -euo pipefail
+            if ! command -v rustup >/dev/null 2>&1; then
+              curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+            fi
+            export PATH="$HOME/.cargo/bin:$PATH"
+            rustup toolchain install stable --profile minimal
+            rustup default stable
+            rustup component add rustfmt clippy
+
+  install-linux-deps:
+    description: Install the Linux dependencies used by secure-storage builds.
+    steps:
+      - run:
+          name: Install Linux build dependencies
+          command: |
+            set -euo pipefail
+            sudo apt-get update
+            sudo apt-get install -y libdbus-1-dev pkg-config
+
+  package-unix:
+    parameters:
+      target:
+        type: string
+    steps:
+      - run:
+          name: Verify and package << parameters.target >>
+          command: |
+            set -euo pipefail
+            target="<< parameters.target >>"
+            binary="target/$target/release/linear-cli"
+            artifact_dir="artifacts/$target"
+            test -x "$binary"
+            cargo_version="$(awk -F'"' '/^version = "/ { print $2; exit }' Cargo.toml)"
+            test -n "$cargo_version"
+            mkdir -p "$artifact_dir"
+            printf 'linear-cli %s' "$cargo_version" > "$artifact_dir/version.txt"
+            tar -C "target/$target/release" -czf "$artifact_dir/linear-cli-$target.tar.gz" linear-cli
+            tar -tzf "$artifact_dir/linear-cli-$target.tar.gz" | grep -qx 'linear-cli'
+      - persist_to_workspace:
+          root: .
+          paths:
+            - artifacts/<< parameters.target >>
+      - store_artifacts:
+          path: artifacts/<< parameters.target >>
+
+jobs:
+  test:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    steps:
+      - checkout
+      - install-linux-deps
+      - install-rust
+      - run:
+          name: Run locked test suite
+          command: |
+            set -euo pipefail
+            export PATH="$HOME/.cargo/bin:$PATH"
+            cargo test --locked --features secure-storage
+      - run:
+          name: Check formatting
+          command: |
+            set -euo pipefail
+            export PATH="$HOME/.cargo/bin:$PATH"
+            cargo fmt --all -- --check
+      - run:
+          name: Check release verifier shell syntax
+          command: bash -n .circleci/verify-release.sh
+      - run:
+          name: Run clippy with warnings denied
+          command: |
+            set -euo pipefail
+            export PATH="$HOME/.cargo/bin:$PATH"
+            cargo clippy --locked --features secure-storage -- -D warnings
+      - run:
+          name: Build default feature set
+          command: |
+            set -euo pipefail
+            export PATH="$HOME/.cargo/bin:$PATH"
+            cargo build --locked --verbose
+
+  build-linux-x86:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    steps:
+      - checkout
+      - install-linux-deps
+      - install-rust
+      - run:
+          name: Build x86_64 Linux binary
+          command: |
+            set -euo pipefail
+            export PATH="$HOME/.cargo/bin:$PATH"
+            rustup target add x86_64-unknown-linux-gnu
+            cargo build --locked --release --features secure-storage --target x86_64-unknown-linux-gnu
+      - run:
+          name: Verify native x86_64 Linux binary
+          command: |
+            set -euo pipefail
+            export PATH="$HOME/.cargo/bin:$PATH"
+            version="$(awk -F'"' '/^version = "/ { print $2; exit }' Cargo.toml)"
+            reported="$(target/x86_64-unknown-linux-gnu/release/linear-cli --version)"
+            test "$reported" = "linear-cli $version"
+      - package-unix:
+          target: x86_64-unknown-linux-gnu
+
+  build-linux-arm:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: large
+    steps:
+      - checkout
+      - install-rust
+      - run:
+          name: Build aarch64 Linux binary with Cross
+          command: |
+            set -euo pipefail
+            export PATH="$HOME/.cargo/bin:$PATH"
+            cargo install cross --locked --version 0.2.5
+            cross build --locked --release --features secure-storage --target aarch64-unknown-linux-gnu
+      - package-unix:
+          target: aarch64-unknown-linux-gnu
+
+  build-macos-x86:
+    macos:
+      xcode: 26.6.0
+    resource_class: m4pro.medium
+    steps:
+      - checkout
+      - install-rust
+      - run:
+          name: Build x86_64 macOS binary
+          command: |
+            set -euo pipefail
+            export PATH="$HOME/.cargo/bin:$PATH"
+            rustup target add x86_64-apple-darwin
+            cargo build --locked --release --features secure-storage --target x86_64-apple-darwin
+      - package-unix:
+          target: x86_64-apple-darwin
+
+  build-macos-arm:
+    macos:
+      xcode: 26.6.0
+    resource_class: m4pro.medium
+    steps:
+      - checkout
+      - install-rust
+      - run:
+          name: Build aarch64 macOS binary
+          command: |
+            set -euo pipefail
+            export PATH="$HOME/.cargo/bin:$PATH"
+            rustup target add aarch64-apple-darwin
+            cargo build --locked --release --features secure-storage --target aarch64-apple-darwin
+      - package-unix:
+          target: aarch64-apple-darwin
+
+  build-windows-x86:
+    machine:
+      image: windows-server-2022-gui:current
+      shell: powershell.exe -ExecutionPolicy Bypass
+    resource_class: windows.medium
+    steps:
+      - checkout
+      - run:
+          name: Install Rust
+          command: |
+            $ErrorActionPreference = 'Stop'
+            $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
+            if (-not (Get-Command rustup -ErrorAction SilentlyContinue)) {
+              $installer = Join-Path $env:TEMP 'rustup-init.exe'
+              Invoke-WebRequest -Uri 'https://win.rustup.rs/x86_64' -OutFile $installer
+              & $installer -y --default-toolchain stable --profile minimal
+            }
+            rustup default stable
+            rustup component add rustfmt clippy
+            rustup target add x86_64-pc-windows-msvc
+      - run:
+          name: Build and package Windows binary
+          command: |
+            $ErrorActionPreference = 'Stop'
+            $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
+            $target = 'x86_64-pc-windows-msvc'
+            cargo build --locked --release --features secure-storage --target $target
+            $binary = "target/$target/release/linear-cli.exe"
+            if (-not (Test-Path -LiteralPath $binary)) { throw "Missing binary: $binary" }
+            & $binary --version
+            $artifactDir = "artifacts/$target"
+            New-Item -ItemType Directory -Force -Path $artifactDir | Out-Null
+            $versionMatch = Select-String -Path Cargo.toml -Pattern '^version = "([^"]+)"'
+            if ($null -eq $versionMatch) { throw 'Cargo.toml version is missing' }
+            $version = $versionMatch.Matches[0].Groups[1].Value
+            [System.IO.File]::WriteAllText((Join-Path $artifactDir 'version.txt'), "linear-cli $version")
+            $stage = Join-Path $env:TEMP "linear-cli-package-$PID"
+            New-Item -ItemType Directory -Force -Path $stage | Out-Null
+            Copy-Item -LiteralPath $binary -Destination (Join-Path $stage 'linear-cli.exe')
+            Compress-Archive -Path (Join-Path $stage 'linear-cli.exe') -DestinationPath "$artifactDir/linear-cli-$target.zip" -Force
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            $archive = [System.IO.Compression.ZipFile]::OpenRead("$artifactDir/linear-cli-$target.zip")
+            try {
+              if (($archive.Entries | ForEach-Object FullName) -ne 'linear-cli.exe') { throw 'Windows archive must contain linear-cli.exe at its root' }
+            } finally {
+              $archive.Dispose()
+            }
+      - persist_to_workspace:
+          root: .
+          paths:
+            - artifacts/x86_64-pc-windows-msvc
+      - store_artifacts:
+          path: artifacts/x86_64-pc-windows-msvc
+
+  verify-release:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: medium
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Verify release tag, version, assets, and checksums
+          command: bash .circleci/verify-release.sh
+      - persist_to_workspace:
+          root: .
+          paths:
+            - release
+      - store_artifacts:
+          path: release
+
+  publish-release:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: small
+    steps:
+      - checkout
+      - attach_workspace:
+          at: .
+      - run:
+          name: Upload verified assets to GitHub Release
+          command: |
+            set -euo pipefail
+            : "${CIRCLE_TAG:?This job must run from a release tag}"
+            : "${GH_TOKEN:?Set GH_TOKEN in the release context}"
+            export GH_REPO="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
+            if ! command -v gh >/dev/null 2>&1; then
+              type -p curl >/dev/null
+              curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg \
+                | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+              sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+              echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" \
+                | sudo tee /etc/apt/sources.list.d/github-cli.list >/dev/null
+              sudo apt-get update
+              sudo apt-get install -y gh
+            fi
+            if gh release view "$CIRCLE_TAG" >/dev/null 2>&1; then
+              gh release upload "$CIRCLE_TAG" release/* --clobber
+            else
+              gh release create "$CIRCLE_TAG" release/* --verify-tag --title "$CIRCLE_TAG" --generate-notes
+            fi
+            expected=(
+              SHA256SUMS
+              release-manifest.json
+              linear-cli-x86_64-unknown-linux-gnu.tar.gz
+              linear-cli-aarch64-unknown-linux-gnu.tar.gz
+              linear-cli-x86_64-pc-windows-msvc.zip
+              linear-cli-x86_64-apple-darwin.tar.gz
+              linear-cli-aarch64-apple-darwin.tar.gz
+            )
+            actual="$(gh release view "$CIRCLE_TAG" --json assets --jq '.assets[].name' | sort)"
+            expected_sorted="$(printf '%s\n' "${expected[@]}" | sort)"
+            test "$actual" = "$expected_sorted"
+
+  publish-crate:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: small
+    steps:
+      - checkout
+      - install-rust
+      - run:
+          name: Publish the version proven by the release tag
+          command: |
+            set -euo pipefail
+            : "${CIRCLE_TAG:?This job must run from a release tag}"
+            : "${CARGO_REGISTRY_TOKEN:?Set CARGO_REGISTRY_TOKEN in the release context}"
+            version="${CIRCLE_TAG#v}"
+            cargo_version="$(awk -F'"' '/^version = "/ { print $2; exit }' Cargo.toml)"
+            test "$cargo_version" = "$version"
+            export PATH="$HOME/.cargo/bin:$PATH"
+            cargo publish --locked
+
+workflows:
+  ci:
+    jobs:
+      - test:
+          filters:
+            branches:
+              only: /.*/
+            tags:
+              ignore: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+  release:
+    jobs:
+      - build-linux-x86:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+      - build-linux-arm:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+      - build-macos-x86:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+      - build-macos-arm:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+      - build-windows-x86:
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+      - verify-release:
+          requires:
+            - build-linux-x86
+            - build-linux-arm
+            - build-macos-x86
+            - build-macos-arm
+            - build-windows-x86
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+      - publish-release:
+          requires:
+            - verify-release
+          context: linear-cli-release
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+      - publish-crate:
+          requires:
+            - publish-release
+          context: linear-cli-release
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/

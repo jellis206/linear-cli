@@ -1,132 +1,93 @@
 # Manual Release Guide
 
-Use this guide when GitHub Actions is unavailable or when release assets need to be backfilled by hand.
+This is the controlled fallback when CircleCI is unavailable. The same
+fail-closed contract as `.circleci/config.yml` applies: never publish or
+announce a release with a partial asset set.
 
-## Rules
+## Release contract
 
-1. Publish the crate to crates.io before creating or updating the matching GitHub release.
-2. Only attach binaries built from the exact source for that version tag.
-3. Keep Windows release assets on `x86_64-pc-windows-msvc` so `cargo-binstall` metadata stays correct.
+1. Set `Cargo.toml` and `Cargo.lock` to the intended version, for example
+   `0.3.28`.
+2. Create and push the matching tag, for example `v0.3.28`, from the exact
+   source to be released.
+3. Build exactly these archives:
 
-## Version Order
+   - `linear-cli-x86_64-unknown-linux-gnu.tar.gz`
+   - `linear-cli-aarch64-unknown-linux-gnu.tar.gz`
+   - `linear-cli-x86_64-pc-windows-msvc.zip`
+   - `linear-cli-x86_64-apple-darwin.tar.gz`
+   - `linear-cli-aarch64-apple-darwin.tar.gz`
 
-- Repair a broken old release from its exact tagged source.
-- Cut the next release from the current branch only after the old release is consistent again.
+4. Verify native binaries with `linear-cli --version`, and verify that their
+   output equals `linear-cli <version>`. For cross-target builds, verify the
+   target format with `file` and preserve the version from the tagged
+   `Cargo.toml` build.
+5. Create/upload the GitHub release only after all five artifacts pass.
+6. Publish the same version to crates.io with `cargo publish --locked`.
 
-## Repairing `v0.3.16`
+The Windows archive must contain `linear-cli.exe` at its archive root. The
+other archives must contain `linear-cli` at their archive root.
 
-Build from commit `84f522199e1a5c9332fca76ccefeae924c92115e`.
+## Build commands
 
-### Linux x86_64
-
-```bash
-cargo build --release --target x86_64-unknown-linux-gnu
-tar -C target/x86_64-unknown-linux-gnu/release -czf linear-cli-x86_64-unknown-linux-gnu.tar.gz linear-cli
-```
-
-### Linux aarch64
-
-`v0.3.16` still uses OpenSSL-backed TLS, so build it with a temporary `Cross.toml` instead of editing the old tag:
-
-```toml
-[target.aarch64-unknown-linux-gnu]
-pre-build = [
-  "dpkg --add-architecture $CROSS_DEB_ARCH",
-  "apt-get update && apt-get --assume-yes install libssl-dev:$CROSS_DEB_ARCH"
-]
-```
-
-```bash
-CROSS_CONFIG=/absolute/path/to/Cross.toml cross build --release --target aarch64-unknown-linux-gnu
-tar -C target/aarch64-unknown-linux-gnu/release -czf linear-cli-aarch64-unknown-linux-gnu.tar.gz linear-cli
-```
-
-### Windows x86_64 (MSVC)
-
-On Ubuntu, `cargo xwin` also needs LLVM's MSVC-compatible entrypoints available on `PATH`:
+Run these commands from the release tag. Linux builds need `libdbus-1-dev` and
+`pkg-config`; the repository `Cross.toml` supplies the aarch64 Linux setup.
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y clang lld
-sudo ln -sf /usr/bin/clang-18 /usr/local/bin/clang-cl
-sudo ln -sf /usr/bin/llvm-lib-18 /usr/local/bin/llvm-lib
-sudo ln -sf /usr/bin/llvm-ar-18 /usr/local/bin/llvm-ar
+sudo apt-get install -y libdbus-1-dev pkg-config
+
+cargo build --locked --release --features secure-storage \
+  --target x86_64-unknown-linux-gnu
+tar -C target/x86_64-unknown-linux-gnu/release -czf \
+  linear-cli-x86_64-unknown-linux-gnu.tar.gz linear-cli
+
+cargo install cross --locked --version 0.2.5
+cross build --locked --release --features secure-storage \
+  --target aarch64-unknown-linux-gnu
+tar -C target/aarch64-unknown-linux-gnu/release -czf \
+  linear-cli-aarch64-unknown-linux-gnu.tar.gz linear-cli
 ```
 
-```bash
-rustup target add x86_64-pc-windows-msvc
-cargo xwin build --release --target x86_64-pc-windows-msvc
-cd target/x86_64-pc-windows-msvc/release && 7z a ../../../linear-cli-x86_64-pc-windows-msvc.zip linear-cli.exe
-```
-
-### macOS on a real Mac
+Build the two Apple targets on a macOS host:
 
 ```bash
 rustup target add x86_64-apple-darwin aarch64-apple-darwin
-cargo build --release --target x86_64-apple-darwin
-tar -C target/x86_64-apple-darwin/release -czf linear-cli-x86_64-apple-darwin.tar.gz linear-cli
-
-cargo build --release --target aarch64-apple-darwin
-tar -C target/aarch64-apple-darwin/release -czf linear-cli-aarch64-apple-darwin.tar.gz linear-cli
+cargo build --locked --release --features secure-storage --target x86_64-apple-darwin
+tar -C target/x86_64-apple-darwin/release -czf \
+  linear-cli-x86_64-apple-darwin.tar.gz linear-cli
+cargo build --locked --release --features secure-storage --target aarch64-apple-darwin
+tar -C target/aarch64-apple-darwin/release -czf \
+  linear-cli-aarch64-apple-darwin.tar.gz linear-cli
 ```
 
-### Publish and upload
+Build the Windows target on a Windows host with the MSVC toolchain:
+
+```powershell
+rustup target add x86_64-pc-windows-msvc
+cargo build --locked --release --features secure-storage --target x86_64-pc-windows-msvc
+Compress-Archive -Path target/x86_64-pc-windows-msvc/release/linear-cli.exe `
+  -DestinationPath linear-cli-x86_64-pc-windows-msvc.zip -Force
+```
+
+## Verify and upload
+
+Before uploading, check the archive names and versions manually, then create
+or update the release with the exact tag:
 
 ```bash
-cargo publish
-gh release upload v0.3.16 \
-  linear-cli-x86_64-unknown-linux-gnu.tar.gz \
-  linear-cli-aarch64-unknown-linux-gnu.tar.gz \
-  linear-cli-x86_64-pc-windows-msvc.zip \
-  linear-cli-x86_64-apple-darwin.tar.gz \
-  linear-cli-aarch64-apple-darwin.tar.gz
+sha256sum linear-cli-*
+gh release create v0.3.28 --verify-tag --title v0.3.28 --generate-notes
+gh release upload v0.3.28 linear-cli-*.tar.gz linear-cli-*.zip --clobber
+cargo publish --locked
 ```
 
-Confirm crates.io shows `0.3.16` before moving on.
-
-## Releasing `v0.3.17` and newer
-
-Current `master` uses `reqwest` with `rustls`. Official binaries should build with
-`--features secure-storage` so Keychain / Credential Manager / Secret Service work.
-
-Linux builds need `libdbus-1-dev` (and `pkg-config`). For aarch64 cross builds, use the
-repo-root `Cross.toml` which installs `libdbus-1-dev:$CROSS_DEB_ARCH`.
-
-### Local builds
-
-```bash
-sudo apt-get install -y libdbus-1-dev pkg-config   # Linux hosts only
-
-cargo build --release --features secure-storage --target x86_64-unknown-linux-gnu
-tar -C target/x86_64-unknown-linux-gnu/release -czf linear-cli-x86_64-unknown-linux-gnu.tar.gz linear-cli
-
-cross build --release --features secure-storage --target aarch64-unknown-linux-gnu
-tar -C target/aarch64-unknown-linux-gnu/release -czf linear-cli-aarch64-unknown-linux-gnu.tar.gz linear-cli
-
-cargo xwin build --release --features secure-storage --target x86_64-pc-windows-msvc
-cd target/x86_64-pc-windows-msvc/release && 7z a ../../../linear-cli-x86_64-pc-windows-msvc.zip linear-cli.exe
-```
-
-Build both Apple targets on a Mac with `--features secure-storage` as well.
-
-### Publish first, then release
-
-```bash
-cargo publish
-gh release create v0.3.17 --title v0.3.17 --notes "Manual release."
-gh release upload v0.3.17 \
-  linear-cli-x86_64-unknown-linux-gnu.tar.gz \
-  linear-cli-aarch64-unknown-linux-gnu.tar.gz \
-  linear-cli-x86_64-pc-windows-msvc.zip \
-  linear-cli-x86_64-apple-darwin.tar.gz \
-  linear-cli-aarch64-apple-darwin.tar.gz
-```
-
-## Final Checks
+Finally confirm both public surfaces show the same version:
 
 ```bash
 cargo search linear-cli --limit 1
-gh release view v0.3.17
+gh release view v0.3.28
 ```
 
-The crates.io version and the GitHub release tag should match before announcing the release.
+The crates.io version and the GitHub release tag must match before announcing
+the release.

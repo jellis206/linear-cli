@@ -357,47 +357,6 @@ async fn create_comment(issue_id: &str, body: &str, parent_id: Option<String>) -
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_safe_terminal_value_removes_escape_sequences() {
-        assert_eq!(
-            safe_terminal_value("bad\u{1b}]52;c;ZXZpbA==\u{7}title"),
-            "badtitle"
-        );
-    }
-
-    #[test]
-    fn comments_status_ok_when_nothing_failed() {
-        assert!(comments_status(None, &[]).is_ok());
-    }
-
-    #[test]
-    fn comments_status_notfound_when_only_missing() {
-        let err = comments_status(None, &["LIN-9".to_string()]).unwrap_err();
-        assert_eq!(err.downcast_ref::<CliError>().expect("CliError").code(), 2);
-    }
-
-    #[test]
-    fn comments_status_preserves_real_error_over_missing() {
-        // A real fetch error keeps its kind (rate-limited => 4), not NotFound(2).
-        let err = comments_status(
-            Some(
-                CliError::rate_limited("429")
-                    .with_retry_after(Some(5))
-                    .into(),
-            ),
-            &["LIN-9".to_string()],
-        )
-        .unwrap_err();
-        let cli = err.downcast_ref::<CliError>().expect("CliError");
-        assert_eq!(cli.code(), 4);
-        assert_eq!(cli.retry_after, Some(5));
-    }
-}
-
 async fn update_comment(id: &str, body: &str, output: &OutputOptions) -> Result<()> {
     let client = LinearClient::new()?;
 
@@ -465,4 +424,45 @@ async fn delete_comment(id: &str, force: bool) -> Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_safe_terminal_value_removes_escape_sequences() {
+        assert_eq!(
+            safe_terminal_value("bad\u{1b}]52;c;ZXZpbA==\u{7}title"),
+            "badtitle"
+        );
+    }
+
+    #[test]
+    fn comments_status_ok_when_nothing_failed() {
+        assert!(comments_status(None, &[]).is_ok());
+    }
+
+    #[test]
+    fn comments_status_notfound_when_only_missing() {
+        let err = comments_status(None, &["LIN-9".to_string()]).unwrap_err();
+        assert_eq!(err.downcast_ref::<CliError>().expect("CliError").code(), 2);
+    }
+
+    #[test]
+    fn comments_status_preserves_real_error_over_missing() {
+        // A real fetch error keeps its kind (rate-limited => 4), not NotFound(2).
+        let err = comments_status(
+            Some(
+                CliError::rate_limited("429")
+                    .with_retry_after(Some(5))
+                    .into(),
+            ),
+            &["LIN-9".to_string()],
+        )
+        .unwrap_err();
+        let cli = err.downcast_ref::<CliError>().expect("CliError");
+        assert_eq!(cli.code(), 4);
+        assert_eq!(cli.retry_after, Some(5));
+    }
 }

@@ -605,19 +605,6 @@ pub async fn fetch_view_filter(
     Ok(filter.clone())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_safe_terminal_value_removes_escape_sequences() {
-        assert_eq!(
-            safe_terminal_value("bad\u{1b}]52;c;ZXZpbA==\u{7}title"),
-            "badtitle"
-        );
-    }
-}
-
 /// Fetch the projectFilterData for a custom view (used by projects list --view).
 pub async fn fetch_view_project_filter(
     client: &LinearClient,
@@ -645,4 +632,17 @@ pub async fn fetch_view_project_filter(
     }
 
     Ok(filter.clone())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_safe_terminal_value_removes_escape_sequences() {
+        assert_eq!(
+            safe_terminal_value("bad\u{1b}]52;c;ZXZpbA==\u{7}title"),
+            "badtitle"
+        );
+    }
 }

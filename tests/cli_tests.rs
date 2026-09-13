@@ -74,6 +74,13 @@ fn test_issues_help() {
 }
 
 #[test]
+fn test_issues_create_help_includes_project() {
+    let (code, stdout, _stderr) = run_cli(&["issues", "create", "--help"]);
+    assert_eq!(code, 0);
+    assert!(stdout.contains("--project"));
+}
+
+#[test]
 fn test_teams_help() {
     let (code, stdout, _stderr) = run_cli(&["teams", "--help"]);
     assert_eq!(code, 0);
@@ -1348,6 +1355,43 @@ fn test_dry_run_output() {
         code != 0 || combined.contains("dry_run") || combined.contains("DRY RUN"),
         "dry-run should either output preview or fail after parsing; stdout={stdout:?} stderr={stderr:?}"
     );
+}
+
+#[test]
+fn test_unsupported_dry_run_fails_closed_before_auth() {
+    let cases: [&[&str]; 3] = [
+        &[
+            "relations",
+            "add",
+            "LIN-1",
+            "-r",
+            "blocks",
+            "LIN-2",
+            "--dry-run",
+        ],
+        &["bulk", "assign", "me", "-i", "LIN-1", "--dry-run"],
+        &[
+            "api",
+            "query",
+            "mutation { issueCreate(input: {}) { success } }",
+            "--dry-run",
+        ],
+    ];
+
+    for args in cases {
+        let (code, stdout, stderr) = run_cli(args);
+        assert_ne!(code, 0, "unsupported dry-run must fail: {args:?}");
+        let combined = format!("{stdout}\n{stderr}");
+        assert!(
+            combined.contains("--dry-run is not supported")
+                && combined.contains("no changes were made"),
+            "dry-run rejection should be explicit: args={args:?}, output={combined:?}"
+        );
+        assert!(
+            !combined.contains("No API key configured"),
+            "rejection should happen before auth: args={args:?}, output={combined:?}"
+        );
+    }
 }
 
 #[test]

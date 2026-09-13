@@ -12,7 +12,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use crate::output::print_json_owned;
 use crate::{AgentOptions, OutputOptions};
 
-const RELEASE_API_URL: &str = "https://api.github.com/repos/Finesssee/linear-cli/releases/latest";
+const RELEASE_API_URL: &str = "https://api.github.com/repos/nesszer/linear-cli/releases/latest";
 const UPDATE_CHECK_INTERVAL_SECONDS: u64 = 24 * 60 * 60;
 
 #[derive(Debug, Deserialize)]

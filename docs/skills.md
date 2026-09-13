@@ -6,13 +6,13 @@
 
 ```bash
 # Install all skills
-npx skills add Finesssee/linear-cli
+npx skills add nesszer/linear-cli
 
 # Install specific skill
-npx skills add Finesssee/linear-cli --skill linear-list
+npx skills add nesszer/linear-cli --skill linear-list
 
 # Install globally (available in all projects)
-npx skills add Finesssee/linear-cli -g
+npx skills add nesszer/linear-cli -g
 ```
 
 ## Available Skills (38 total)
@@ -154,5 +154,5 @@ npx skills update
 npx skills remove --skill linear-list
 
 # Remove all linear-cli skills
-npx skills remove Finesssee/linear-cli
+npx skills remove nesszer/linear-cli
 ```

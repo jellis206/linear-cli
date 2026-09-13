@@ -1,7 +1,7 @@
 # linear-cli
 
 [![Crates.io](https://img.shields.io/crates/v/linear-cli)](https://crates.io/crates/linear-cli)
-[![CI](https://github.com/Finesssee/linear-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/Finesssee/linear-cli/actions/workflows/ci.yml)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/nesszer/linear-cli/tree/master.svg?style=shield)](https://app.circleci.com/pipelines/github/nesszer/linear-cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Rust](https://img.shields.io/badge/rust-1.70%2B-orange.svg)](https://www.rust-lang.org/)
 
@@ -20,11 +20,11 @@ cargo install linear-cli
 cargo install linear-cli --features secure-storage
 
 # From source
-git clone https://github.com/Finesssee/linear-cli.git
+git clone https://github.com/nesszer/linear-cli.git
 cd linear-cli && cargo build --release
 ```
 
-Pre-built binaries for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64) are available at [GitHub Releases](https://github.com/Finesssee/linear-cli/releases). [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) downloads these automatically.
+Pre-built binaries for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Windows (x86_64) are available at [GitHub Releases](https://github.com/nesszer/linear-cli/releases). [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) downloads these automatically.
 
 ## Updating
 
@@ -83,6 +83,7 @@ linear-cli i get LIN-123 --comments              # Inline comments
 linear-cli i get LIN-1 LIN-2 LIN-3              # Batch fetch
 
 linear-cli i create "Fix login" -t ENG -p 1      # Create urgent issue
+linear-cli i create "Fix login" -t ENG --project "Q2 Roadmap"
 linear-cli i update LIN-123 -s Done              # Update status
 linear-cli i update LIN-123 -l bug -l urgent     # Add labels
 linear-cli i update LIN-123 --due tomorrow       # Set due date
@@ -99,6 +100,8 @@ linear-cli i archive LIN-123                     # Archive
 linear-cli i open LIN-123                        # Open in browser
 linear-cli i link LIN-123                        # Print URL
 ```
+
+**Create flags:** `--team`, `--description`, `--data`, `--priority`, `--state`, `--assignee`, `--labels`, `--due`, `--estimate`, `--project`, `--template`, `--dry-run`
 
 **List flags:** `--mine`, `--team`, `--state`, `--assignee`, `--project`, `--label`, `--since`, `--view`, `--group-by` (state/priority/assignee/project), `--count-only`, `--archived`
 
@@ -360,7 +363,20 @@ linear-cli g branch LIN-123                      # Show branch name
 linear-cli g create LIN-123                      # Create branch (no checkout)
 linear-cli g commits                             # Commits with Linear trailers (jj)
 linear-cli g pr LIN-123 --draft                  # Create GitHub PR
+linear-cli g review-url LIN-123                  # Linear review URL for the issue's PR
 ```
+
+`review-url` reads the review URL from the issue's pull request notifications —
+the one public place a pull request is paired with its review page — and falls
+back to the pull requests linked to the issue's agent sessions. A pull request
+that has produced neither (a brand-new PR with no CI result, comment, or review
+activity yet) has nothing to resolve, and the command reports it instead of
+guessing a URL.
+
+Unresolved pull requests are part of the output, not a silent omission: `-o json`
+returns `{"resolved": [...], "unresolved": [...]}`, and the plain-text form prints
+the review URLs on stdout while naming any unresolved pull request on stderr. The
+command fails only when it resolved nothing at all.
 
 ### Import / Export
 
@@ -579,10 +595,10 @@ linear-cli includes Agent Skills for AI coding assistants (Claude Code, Cursor, 
 
 ```bash
 # Install all skills
-npx skills add Finesssee/linear-cli
+npx skills add nesszer/linear-cli
 
 # Install specific skill
-npx skills add Finesssee/linear-cli --skill linear-workflow
+npx skills add nesszer/linear-cli --skill linear-workflow
 ```
 
 38 skills covering issues, git, planning, organization, operations, tracking, and advanced API usage. Skills are 10-50x more token-efficient than MCP tools. See [docs/skills.md](docs/skills.md) for details.

@@ -3,6 +3,7 @@ mod cache;
 mod commands;
 mod config;
 mod dates;
+mod dry_run;
 mod error;
 mod input;
 mod json_path;
@@ -269,7 +270,7 @@ pub fn display_options() -> DisplayOptions {
 }
 
 #[derive(Subcommand)]
-enum Commands {
+pub(crate) enum Commands {
     /// Show common tasks and examples
     #[command(alias = "tasks")]
     Common,
@@ -776,7 +777,7 @@ ENV OVERRIDES:
 }
 
 #[derive(Subcommand)]
-enum ConfigCommands {
+pub(crate) enum ConfigCommands {
     /// Set API key
     #[command(after_help = r#"EXAMPLE:
     printf '%s\n' "$LINEAR_API_KEY" | linear config set-key"#)]
@@ -935,6 +936,7 @@ fn main() -> Result<()> {
 
 async fn async_main() -> Result<i32> {
     let cli = Cli::parse();
+    api::set_dry_run(cli.dry_run);
     if cli.no_color || cli.color_mode == ColorChoice::Never {
         colored::control::set_override(false);
     } else if cli.color_mode == ColorChoice::Always {
@@ -1105,6 +1107,10 @@ async fn run_command(
     agent_opts: AgentOptions,
     retry: u32,
 ) -> Result<()> {
+    if let Some(command_name) = dry_run::unsupported_command(&command) {
+        output::reject_unsupported_dry_run(output.dry_run, command_name)?;
+    }
+
     match command {
         Commands::Common => {
             println!("Common tasks:");
@@ -1160,7 +1166,7 @@ async fn run_command(
         Commands::Search { action } => search::handle(action, output).await?,
         Commands::Sync { action } => sync::handle(action, output).await?,
         Commands::Statuses { action } => statuses::handle(action, output).await?,
-        Commands::Git { action } => git::handle(action).await?,
+        Commands::Git { action } => git::handle(action, output).await?,
         Commands::Bulk { action } => bulk::handle(action, output).await?,
         Commands::Cache { action } => commands::cache::handle(action).await?,
         Commands::Notifications { action } => notifications::handle(action, output).await?,
