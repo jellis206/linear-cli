@@ -1,5 +1,11 @@
 version: 2.1
 
+parameters:
+  publish_crate:
+    description: Publish the verified crate to crates.io when its dedicated context is configured.
+    type: boolean
+    default: false
+
 commands:
   install-rust:
     description: Install the stable Rust toolchain and CI components.
@@ -251,7 +257,8 @@ jobs:
           command: |
             set -euo pipefail
             : "${CIRCLE_TAG:?This job must run from a release tag}"
-            : "${GH_TOKEN:?Set GH_TOKEN in the release context}"
+            : "${gh_token:?Set gh_token in the gh-release-publisher context}"
+            export GH_TOKEN="$gh_token"
             export GH_REPO="${CIRCLE_PROJECT_USERNAME}/${CIRCLE_PROJECT_REPONAME}"
             if ! command -v gh >/dev/null 2>&1; then
               type -p curl >/dev/null
@@ -281,6 +288,24 @@ jobs:
             expected_sorted="$(printf '%s\n' "${expected[@]}" | sort)"
             test "$actual" = "$expected_sorted"
 
+  verify-crate:
+    machine:
+      image: ubuntu-2404:current
+    resource_class: small
+    steps:
+      - checkout
+      - install-rust
+      - run:
+          name: Verify the crate version before publication
+          command: |
+            set -euo pipefail
+            : "${CIRCLE_TAG:?This job must run from a release tag}"
+            version="${CIRCLE_TAG#v}"
+            cargo_version="$(awk -F'"' '/^version = "/ { print $2; exit }' Cargo.toml)"
+            test "$cargo_version" = "$version"
+            export PATH="$HOME/.cargo/bin:$PATH"
+            cargo package --locked --no-verify
+
   publish-crate:
     machine:
       image: ubuntu-2404:current
@@ -293,7 +318,7 @@ jobs:
           command: |
             set -euo pipefail
             : "${CIRCLE_TAG:?This job must run from a release tag}"
-            : "${CARGO_REGISTRY_TOKEN:?Set CARGO_REGISTRY_TOKEN in the release context}"
+            : "${CARGO_REGISTRY_TOKEN:?Set CARGO_REGISTRY_TOKEN in the cargo-release-publisher context}"
             version="${CIRCLE_TAG#v}"
             cargo_version="$(awk -F'"' '/^version = "/ { print $2; exit }' Cargo.toml)"
             test "$cargo_version" = "$version"
@@ -357,7 +382,17 @@ workflows:
       - publish-release:
           requires:
             - verify-release
-          context: linear-cli-release
+          context: gh-release-publisher
+          filters:
+            branches:
+              ignore: /.*/
+            tags:
+              only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
+
+  crate-release:
+    when: << pipeline.parameters.publish_crate >>
+    jobs:
+      - verify-crate:
           filters:
             branches:
               ignore: /.*/
@@ -365,8 +400,8 @@ workflows:
               only: /^v[0-9]+\.[0-9]+\.[0-9]+$/
       - publish-crate:
           requires:
-            - publish-release
-          context: linear-cli-release
+            - verify-crate
+          context: cargo-release-publisher
           filters:
             branches:
               ignore: /.*/
