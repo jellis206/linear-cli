@@ -22,17 +22,23 @@ Push an annotated or lightweight tag matching `vX.Y.Z`. The release workflow:
    formats, verifies native Linux/Windows binaries with `--version`, and
    generates `SHA256SUMS` plus `release-manifest.json`.
 4. Uploads the verified assets to the GitHub release.
-5. Publishes the matching crate version to crates.io.
+5. Optionally publishes the matching crate version to crates.io when the
+   pipeline is explicitly triggered with `publish_crate=true`.
 
-The GitHub release and crates.io steps are intentionally downstream of the
-five-asset gate. They require a CircleCI context named `linear-cli-release`
-containing:
+The GitHub release step is downstream of the five-asset gate and uses the
+existing CircleCI context `gh-release-publisher` containing:
 
-- `GH_TOKEN`: a GitHub token allowed to create/update releases in this repo.
+- `gh_token`: a GitHub token allowed to create/update releases in this repo.
+
+Crates.io publishing is a separate, opt-in lane. Configure a dedicated
+CircleCI context named `cargo-release-publisher` containing:
+
 - `CARGO_REGISTRY_TOKEN`: the crates.io publish token.
 
-Configure that context and connect this repository to CircleCI before pushing
-the release tag. The local CircleCI CLI can validate the file with:
+The automatic tag trigger publishes GitHub assets only. After configuring the
+Cargo context, trigger the tagged pipeline with
+`--param publish_crate=true` to publish the crate. The local CircleCI CLI can
+validate the file with:
 
 ```bash
 circleci config validate .circleci/config.yml

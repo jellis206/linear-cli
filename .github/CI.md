@@ -23,15 +23,24 @@ The release verifier fails closed unless the tag matches `Cargo.toml`, all
 five archives are present, each archive contains only the expected root binary,
 the target formats match, and native binaries report the tagged version.
 Cross-target jobs carry an independently checked version proof from the tagged
-source. The GitHub release upload and crates.io publish jobs run only after
-this gate.
+source. The GitHub release upload runs only after this gate. Crates.io
+publication is an explicit opt-in lane so a missing registry credential cannot
+turn an otherwise valid GitHub release into an opaque pre-start failure.
 
 ## Credentials and plan prerequisites
 
-Create the restricted CircleCI context `linear-cli-release` with:
+The existing restricted CircleCI context `gh-release-publisher` must contain:
 
-- `GH_TOKEN`: permission to create or update releases in `nesszer/linear-cli`.
+- `gh_token`: permission to create or update releases in `nesszer/linear-cli`.
+
+For crates.io publication, create a separate restricted context
+`cargo-release-publisher` with:
+
 - `CARGO_REGISTRY_TOKEN`: permission to publish `linear-cli` on crates.io.
+
+The automatic tag trigger publishes the GitHub release. Once the Cargo context
+exists, run the tagged pipeline with the `publish_crate=true` pipeline
+parameter to publish the crate as a separate downstream lane.
 
 The macOS and Windows executors also need to be enabled for the CircleCI
 organization/plan. The pipeline cannot prove that external project wiring or

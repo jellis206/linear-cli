@@ -15,14 +15,19 @@ The release gate requires that the tag version equals `Cargo.toml`, that the
 exact five archives exist, that each archive has the expected target format and
 root binary, and that native binaries report the tagged version. Cross-target
 jobs carry an independently checked version proof from their tagged source.
-Only then are the GitHub release assets uploaded and the crate published.
+Only then are the GitHub release assets uploaded. Crates.io publication is a
+separate opt-in lane so its missing credentials cannot prevent the verified
+GitHub release from completing.
 
 **Target set**: `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`,
 `x86_64-pc-windows-msvc`, `x86_64-apple-darwin`, and `aarch64-apple-darwin`.
 
-**Release context**: The CircleCI context `linear-cli-release` must provide
-`GH_TOKEN` for GitHub release uploads and `CARGO_REGISTRY_TOKEN` for crates.io.
-Those credentials are used only by downstream release jobs after verification.
+**Release contexts**: The existing CircleCI context `gh-release-publisher` must
+provide `gh_token` for GitHub release uploads. The optional
+`cargo-release-publisher` context must provide `CARGO_REGISTRY_TOKEN` for
+crates.io. Those credentials are used only by downstream release jobs after
+verification; crates.io publication requires the explicit `publish_crate=true`
+pipeline parameter.
 
 **Manual fallback**: When CircleCI is unavailable, follow
 `docs/manual-release.md` and preserve the same five-asset/version gate.
