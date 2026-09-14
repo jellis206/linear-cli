@@ -1,115 +1,16 @@
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::{Subcommand, ValueHint};
 use csv::Writer;
 use serde_json::json;
 use std::borrow::Cow;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use crate::api::LinearClient;
+use crate::atomic_file::AtomicPrivateFile;
 use crate::output::OutputOptions;
 use crate::pagination::{paginate_nodes, stream_nodes, PaginationOptions};
 use colored::Colorize;
-
-#[cfg(unix)]
-fn create_private_file(path: &Path) -> Result<std::fs::File> {
-    use std::os::unix::fs::OpenOptionsExt;
-
-    Ok(std::fs::OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .mode(0o600)
-        .open(path)?)
-}
-
-#[cfg(not(unix))]
-fn create_private_file(path: &Path) -> Result<std::fs::File> {
-    Ok(std::fs::File::create(path)?)
-}
-
-fn atomic_temp_path(path: &Path) -> Result<PathBuf> {
-    let parent = path.parent().unwrap_or_else(|| Path::new("."));
-    let file_name = path
-        .file_name()
-        .and_then(|name| name.to_str())
-        .context("Output path must include a file name")?;
-    let unique = format!(
-        ".{}.tmp-{}-{}",
-        file_name,
-        std::process::id(),
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)?
-            .as_nanos()
-    );
-    Ok(parent.join(unique))
-}
-
-struct AtomicPrivateFile {
-    file: Option<std::fs::File>,
-    temp_path: PathBuf,
-    final_path: PathBuf,
-    committed: bool,
-}
-
-impl AtomicPrivateFile {
-    fn create(path: &Path) -> Result<Self> {
-        let temp_path = atomic_temp_path(path)?;
-        let file = create_private_file(&temp_path)?;
-        Ok(Self {
-            file: Some(file),
-            temp_path,
-            final_path: path.to_path_buf(),
-            committed: false,
-        })
-    }
-
-    fn commit(&mut self) -> Result<()> {
-        if self.committed {
-            return Ok(());
-        }
-
-        if let Some(mut file) = self.file.take() {
-            file.flush()?;
-            file.sync_all()?;
-            drop(file);
-        }
-
-        std::fs::rename(&self.temp_path, &self.final_path)?;
-        self.committed = true;
-        Ok(())
-    }
-
-    #[cfg(test)]
-    fn file_mut(&mut self) -> &mut std::fs::File {
-        self.file.as_mut().expect("atomic file should be open")
-    }
-}
-
-impl Write for AtomicPrivateFile {
-    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
-        self.file
-            .as_mut()
-            .expect("atomic file should be open")
-            .write(buf)
-    }
-
-    fn flush(&mut self) -> std::io::Result<()> {
-        self.file
-            .as_mut()
-            .expect("atomic file should be open")
-            .flush()
-    }
-}
-
-impl Drop for AtomicPrivateFile {
-    fn drop(&mut self) {
-        if !self.committed {
-            let _ = self.file.take();
-            let _ = std::fs::remove_file(&self.temp_path);
-        }
-    }
-}
 
 enum ExportDestination {
     Stdout(std::io::Stdout),

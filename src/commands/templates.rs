@@ -9,6 +9,8 @@ use std::fs;
 use std::path::PathBuf;
 use tabled::{Table, Tabled};
 
+use crate::atomic_file;
+
 use crate::api::{resolve_team_id, LinearClient};
 use crate::display_options;
 use crate::output::{
@@ -183,8 +185,7 @@ pub fn load_templates() -> Result<TemplateStore> {
 fn save_templates(store: &TemplateStore) -> Result<()> {
     let path = templates_path()?;
     let content = serde_json::to_string_pretty(store)?;
-    fs::write(path, content)?;
-    Ok(())
+    atomic_file::write_private(&path, content.as_bytes())
 }
 
 pub fn get_template(name: &str) -> Result<Option<IssueTemplate>> {

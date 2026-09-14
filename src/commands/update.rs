@@ -4,10 +4,11 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::fs;
-use std::io::Write;
 use std::path::PathBuf;
 use std::process::{Command, ExitStatus, Stdio};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use crate::atomic_file;
 
 use crate::output::print_json_owned;
 use crate::{AgentOptions, OutputOptions};
@@ -436,29 +437,7 @@ fn save_update_state(state: &UpdateState) -> Result<()> {
     fs::create_dir_all(dir)?;
 
     let content = serde_json::to_string_pretty(state)?;
-    let temp_path = path.with_extension("tmp");
-
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::OpenOptionsExt;
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(&temp_path)?;
-        file.write_all(content.as_bytes())?;
-        file.sync_all()?;
-    }
-
-    #[cfg(not(unix))]
-    {
-        let mut file = fs::File::create(&temp_path)?;
-        file.write_all(content.as_bytes())?;
-        file.sync_all()?;
-    }
-
-    fs::rename(&temp_path, &path)?;
+    atomic_file::write_private(&path, content.as_bytes())?;
     Ok(())
 }
 

@@ -7,8 +7,7 @@ use std::io::{IsTerminal, Read};
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-#[cfg(unix)]
-use std::io::Write;
+use crate::atomic_file;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OAuthConfig {
@@ -51,13 +50,16 @@ pub struct Config {
     pub api_key: Option<String>,
 }
 
-fn config_path() -> Result<PathBuf> {
-    let config_dir = dirs::config_dir()
+fn config_dir() -> Result<PathBuf> {
+    Ok(dirs::config_dir()
         .context("Could not find config directory")?
-        .join("linear-cli");
+        .join("linear-cli"))
+}
 
-    fs::create_dir_all(&config_dir)?;
-    Ok(config_dir.join("config.toml"))
+fn config_path() -> Result<PathBuf> {
+    let dir = config_dir()?;
+    fs::create_dir_all(&dir)?;
+    Ok(dir.join("config.toml"))
 }
 
 pub fn load_config() -> Result<Config> {
@@ -87,34 +89,19 @@ pub fn load_config() -> Result<Config> {
 
 pub fn save_config(config: &Config) -> Result<()> {
     let path = config_path()?;
-    let content = toml::to_string_pretty(config)?;
 
-    // Write to temp file then rename for atomicity
-    let dir = path
-        .parent()
-        .context("Config path has no parent directory")?;
-    let temp_path = dir.join(".config.toml.tmp");
-
+    // Only tighten permissions on the write path — not on every `load_config()`
+    // call — so a read-only-mounted config dir (containers, some CI) doesn't
+    // turn every read-only command into an error.
     #[cfg(unix)]
     {
-        use std::os::unix::fs::OpenOptionsExt;
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .mode(0o600)
-            .open(&temp_path)?;
-        file.write_all(content.as_bytes())?;
-        file.flush()?;
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(config_dir()?, fs::Permissions::from_mode(0o700))?;
     }
 
-    #[cfg(not(unix))]
-    {
-        fs::write(&temp_path, &content)?;
-    }
-
-    fs::rename(&temp_path, &path).context("Failed to atomically update config file")?;
-    Ok(())
+    let content = toml::to_string_pretty(config)?;
+    atomic_file::write_private(&path, content.as_bytes())
+        .context("Failed to atomically update config file")
 }
 
 /// Resolve profile name for read/write without the process-lifetime cache used by
@@ -206,7 +193,7 @@ pub fn known_config_keys() -> &'static [&'static str] {
     &["api-key", "profile", "default-team"]
 }
 
-fn read_secret_from_stdin_or_prompt(prompt: &str) -> Result<String> {
+pub fn read_secret_from_stdin_or_prompt(prompt: &str) -> Result<String> {
     if std::io::stdin().is_terminal() {
         let secret = Password::new()
             .with_prompt(prompt)
