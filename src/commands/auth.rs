@@ -2,11 +2,12 @@
 use anyhow::Context;
 use anyhow::Result;
 use clap::Subcommand;
-use dialoguer::{Confirm, Password};
+use dialoguer::Confirm;
 use serde_json::json;
 
 use crate::api::LinearClient;
 use crate::config;
+use crate::error::CliError;
 use crate::oauth;
 use crate::output::{print_json_owned, OutputOptions};
 
@@ -14,8 +15,11 @@ use crate::output::{print_json_owned, OutputOptions};
 pub enum AuthCommands {
     /// Store API key for the current profile
     Login {
-        /// API key to store (if omitted, prompt interactively)
-        #[arg(long, value_name = "KEY")]
+        /// Deprecated and disabled: pass no value here. The key is always read from a
+        /// hidden prompt (or piped stdin) — never from argv, which would leak it into
+        /// shell history and process listings. Hidden from --help; kept only so old
+        /// scripts fail with a clear message instead of a clap parse error.
+        #[arg(long, value_name = "KEY", hide = true)]
         key: Option<String>,
         /// Validate the API key before saving
         #[arg(long)]
@@ -96,10 +100,22 @@ async fn login(
     secure: bool,
     output: &OutputOptions,
 ) -> Result<()> {
-    let key = match key {
-        Some(key) => key,
-        None => Password::new().with_prompt("Linear API key").interact()?,
-    };
+    if key.is_some() {
+        // Consistent with `config set-key`/`config set api-key`, which already
+        // refuse to take the secret via argv: shell history and `ps` both
+        // expose it to other local users. Prompt or stdin only.
+        //
+        // Uses ErrorKind::General (exit code 1, "bad usage"), not Auth (exit code
+        // 3): the flag is rejected, not the credential, and a script or agent
+        // checking exit codes should not read this as "invalid API key".
+        return Err(CliError::general(
+            "Passing the secret via --key on the command line is disabled (it leaks into \
+             shell history and process listings). Omit --key and it will be read from a \
+             hidden prompt, or piped stdin: `printf '%s\\n' \"$LINEAR_API_KEY\" | linear-cli auth login`.",
+        )
+        .into());
+    }
+    let key = config::read_secret_from_stdin_or_prompt("Linear API key")?;
 
     if validate {
         validate_key(&key).await?;
@@ -138,6 +154,18 @@ async fn login(
     }
 
     config::set_workspace_key(&profile, &key)?;
+
+    #[cfg(feature = "secure-storage")]
+    eprintln!(
+        "Note: key stored in plaintext at {}. Use --secure to store it in the OS keyring instead.",
+        config::config_file_path()?.display()
+    );
+    #[cfg(not(feature = "secure-storage"))]
+    eprintln!(
+        "Note: key stored in plaintext at {} (this build lacks the 'secure-storage' feature; \
+         rebuild with --features secure-storage to use the OS keyring instead).",
+        config::config_file_path()?.display()
+    );
 
     if output.is_json() || output.has_template() {
         print_json_owned(

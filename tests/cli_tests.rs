@@ -769,6 +769,22 @@ fn test_auth_status_help() {
 }
 
 #[test]
+fn test_auth_login_rejects_key_on_argv() {
+    let (code, _stdout, stderr) = run_cli(&["auth", "login", "--key", "dummy"]);
+    assert_ne!(code, 0);
+    assert_eq!(code, 1, "rejecting a bad flag is a usage error, not an auth failure");
+    assert!(stderr.contains("--key"));
+    assert!(stderr.contains("shell history"));
+}
+
+#[test]
+fn test_auth_login_help_hides_deprecated_key_flag() {
+    let (code, stdout, _stderr) = run_cli(&["auth", "login", "--help"]);
+    assert_eq!(code, 0);
+    assert!(!stdout.contains("--key"));
+}
+
+#[test]
 fn test_auth_help_examples_include_oauth() {
     let (code, stdout, _stderr) = run_cli(&["auth", "--help"]);
     assert_eq!(code, 0);
