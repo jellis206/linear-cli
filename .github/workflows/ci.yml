@@ -26,18 +26,20 @@ jobs:
     if: vars.CI_BUDGET_MODE != 'off' && vars.CI_BUDGET_MODE != 'thin'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install Linux keyring build deps
         run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
 
+      # Not pinned to a SHA: this action's whole point is a moving `stable` branch
+      # that always resolves to the current Rust stable release.
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
 
       - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+        uses: Swatinem/rust-cache@49a0bdc70d2e1b713ca9e2869b211fcce03d3c1c # v2
 
       - name: Run tests
         run: cargo test --verbose --features secure-storage
