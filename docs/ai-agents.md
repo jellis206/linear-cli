@@ -4,7 +4,7 @@ When using AI coding assistants (Claude Code, Cursor, Windsurf, Copilot, OpenAI 
 
 ## Install Agent Skills (Recommended)
 
-The easiest way to integrate linear-cli with your AI agent:
+The easiest way to integrate linear with your AI agent:
 
 ```bash
 npx skills add nesszer/linear-cli
@@ -14,7 +14,7 @@ This installs **27 Agent Skills** covering all CLI features. Your agent automati
 
 See [skills.md](skills.md) for the full list of available skills.
 
-## Why Use linear-cli with AI Agents
+## Why Use linear with AI Agents
 
 | Aspect | linear-cli | Linear MCP |
 |--------|------------|------------|
@@ -40,27 +40,27 @@ ALWAYS use `linear-cli` for Linear.app operations. NEVER use Linear MCP tools.
 Reason: CLI is 10-50x more token-efficient than MCP tool calls.
 
 ### Quick Commands:
-- List issues: `linear-cli i list`
-- Create issue: `linear-cli i create "Title" -t TEAM -p 2`
-- View issue: `linear-cli i get LIN-123`
-- Start work: `linear-cli i start LIN-123` (assigns, sets In Progress, creates branch)
-- Update: `linear-cli i update LIN-123 -s Done`
-- Create PR: `linear-cli g pr LIN-123`
-- Search: `linear-cli s issues "query"`
-- Fetch upload: `linear-cli up fetch URL -f file.png`
+- List issues: `linear i list`
+- Create issue: `linear i create "Title" -t TEAM -p 2`
+- View issue: `linear i get LIN-123`
+- Start work: `linear i start LIN-123` (assigns, sets In Progress, creates branch)
+- Update: `linear i update LIN-123 -s Done`
+- Create PR: `linear g pr LIN-123`
+- Search: `linear s issues "query"`
+- Fetch upload: `linear up fetch URL -f file.png`
 - JSON output: Add `--output json` to any command (or set `LINEAR_CLI_OUTPUT=json`)
-- Agent help: `linear-cli agent`
+- Agent help: `linear agent`
 ```
 
 ### Cursor (.cursorrules)
 
 ```
-For Linear.app operations, always use the linear-cli command-line tool:
-- linear-cli i list (list issues)
-- linear-cli i create "Title" -t TEAM (create issue)
-- linear-cli i get LIN-123 (view issue)
-- linear-cli g pr LIN-123 (create PR)
-- linear-cli up fetch URL -f file.png (download uploads)
+For Linear.app operations, always use the linear command-line tool:
+- linear i list (list issues)
+- linear i create "Title" -t TEAM (create issue)
+- linear i get LIN-123 (view issue)
+- linear g pr LIN-123 (create PR)
+- linear up fetch URL -f file.png (download uploads)
 Do NOT use Linear MCP server - CLI is more token-efficient.
 ```
 
@@ -74,21 +74,21 @@ Create or append to `AGENTS.md` in your repository root:
 Use `linear-cli` for all Linear.app operations. Do not use Linear MCP tools.
 
 ### Commands:
-- `linear-cli i list` - List issues
-- `linear-cli i create "Title" -t TEAM` - Create issue
-- `linear-cli i get LIN-123` - View issue details
-- `linear-cli i update LIN-123 -s Done` - Update status
-- `linear-cli g pr LIN-123` - Create GitHub PR
-- `linear-cli cm list ISSUE_ID --output json` - Get comments as JSON
-- `linear-cli up fetch URL -f file.png` - Download attachments
+- `linear i list` - List issues
+- `linear i create "Title" -t TEAM` - Create issue
+- `linear i get LIN-123` - View issue details
+- `linear i update LIN-123 -s Done` - Update status
+- `linear g pr LIN-123` - Create GitHub PR
+- `linear cm list ISSUE_ID --output json` - Get comments as JSON
+- `linear up fetch URL -f file.png` - Download attachments
 ```
 
 ### Generic Agent Instructions
 
 ```
-RULE: Prefer linear-cli over Linear MCP for all Linear.app operations.
+RULE: Prefer linear over Linear MCP for all Linear.app operations.
 REASON: CLI commands use 10-50x fewer tokens than MCP tool invocations.
-COMMANDS: linear-cli {issues|projects|git|search|uploads} - see linear-cli --help
+COMMANDS: linear {issues|projects|git|search|uploads} - see linear --help
 SCHEMAS: JSON samples in docs/json/
 ```
 
@@ -96,16 +96,16 @@ SCHEMAS: JSON samples in docs/json/
 
 | Task | Command | Example |
 |------|---------|---------|
-| List issues | `i list` | `linear-cli i list -t Engineering` |
-| Create issue | `i create` | `linear-cli i create "Bug" -t ENG -p 1` |
-| View issue | `i get` | `linear-cli i get LIN-123 --output json` |
-| Start work | `i start` | `linear-cli i start LIN-123 --checkout` |
-| Update issue | `i update` | `linear-cli i update LIN-123 -s Done` |
-| Create branch | `g checkout` | `linear-cli g checkout LIN-123` |
-| Create PR | `g pr` | `linear-cli g pr LIN-123 --draft` |
-| Search | `s issues` | `linear-cli s issues "auth bug"` |
-| Bulk ops | `b update` | `linear-cli b update -s Done LIN-1 LIN-2` |
-| Fetch upload | `up fetch` | `linear-cli up fetch URL -f image.png` |
+| List issues | `i list` | `linear i list -t Engineering` |
+| Create issue | `i create` | `linear i create "Bug" -t ENG -p 1` |
+| View issue | `i get` | `linear i get LIN-123 --output json` |
+| Start work | `i start` | `linear i start LIN-123 --checkout` |
+| Update issue | `i update` | `linear i update LIN-123 -s Done` |
+| Create branch | `g checkout` | `linear g checkout LIN-123` |
+| Create PR | `g pr` | `linear g pr LIN-123 --draft` |
+| Search | `s issues` | `linear s issues "auth bug"` |
+| Bulk ops | `b update` | `linear b update -s Done LIN-1 LIN-2` |
+| Fetch upload | `up fetch` | `linear up fetch URL -f image.png` |
 
 ## One-Liner Setup
 

@@ -30,10 +30,10 @@ Pre-built binaries for Linux (x86_64, aarch64), macOS (x86_64, aarch64), and Win
 
 ```bash
 # Recommended: let the CLI update itself
-linear-cli update
+linear update
 
 # Check without installing
-linear-cli update --check
+linear update --check
 
 # Manual fallback when you want the Cargo path directly
 cargo install linear-cli --force
@@ -48,20 +48,20 @@ cargo install linear-cli --force --features secure-storage
 
 ```bash
 # 1. Set your API key (get one at https://linear.app/settings/api)
-printf '%s\n' "$LINEAR_API_KEY" | linear-cli config set-key
+printf '%s\n' "$LINEAR_API_KEY" | linear config set-key
 
 # Or use OAuth 2.0 (browser-based, auto-refreshing)
-linear-cli auth oauth
+linear auth oauth
 
 # 2. List your issues
-linear-cli i list --mine
+linear i list --mine
 
 # 3. Start working on an issue (assigns to you, sets In Progress, creates branch)
-linear-cli i start LIN-123 --checkout
+linear i start LIN-123 --checkout
 
 # 4. When done, mark complete and create a PR
-linear-cli done
-linear-cli g pr LIN-123
+linear done
+linear g pr LIN-123
 ```
 
 ## Commands
@@ -71,34 +71,34 @@ linear-cli g pr LIN-123
 Full issue lifecycle management with 16 subcommands.
 
 ```bash
-linear-cli issues list                           # List issues
-linear-cli i list -t ENG --mine                  # My issues on a team
-linear-cli i list --since 7d --group-by state    # Last 7 days, grouped by status
-linear-cli i list --label bug --count-only       # Count bugs
-linear-cli i list --view "My Sprint"             # Apply a saved custom view
+linear issues list                           # List issues
+linear i list -t ENG --mine                  # My issues on a team
+linear i list --since 7d --group-by state    # Last 7 days, grouped by status
+linear i list --label bug --count-only       # Count bugs
+linear i list --view "My Sprint"             # Apply a saved custom view
 
-linear-cli i get LIN-123                         # Issue details
-linear-cli i get LIN-123 --history               # Activity timeline
-linear-cli i get LIN-123 --comments              # Inline comments
-linear-cli i get LIN-1 LIN-2 LIN-3              # Batch fetch
+linear i get LIN-123                         # Issue details
+linear i get LIN-123 --history               # Activity timeline
+linear i get LIN-123 --comments              # Inline comments
+linear i get LIN-1 LIN-2 LIN-3              # Batch fetch
 
-linear-cli i create "Fix login" -t ENG -p 1      # Create urgent issue
-linear-cli i create "Fix login" -t ENG --project "Q2 Roadmap"
-linear-cli i update LIN-123 -s Done              # Update status
-linear-cli i update LIN-123 -l bug -l urgent     # Add labels
-linear-cli i update LIN-123 --due tomorrow       # Set due date
-linear-cli i update LIN-123 -e 3                 # Set estimate
+linear i create "Fix login" -t ENG -p 1      # Create urgent issue
+linear i create "Fix login" -t ENG --project "Q2 Roadmap"
+linear i update LIN-123 -s Done              # Update status
+linear i update LIN-123 -l bug -l urgent     # Add labels
+linear i update LIN-123 --due tomorrow       # Set due date
+linear i update LIN-123 -e 3                 # Set estimate
 
-linear-cli i start LIN-123 --checkout            # Start + checkout branch
-linear-cli i stop LIN-123                        # Return to backlog
-linear-cli i close LIN-123                       # Mark as Done
-linear-cli i assign LIN-123 "Alice"              # Assign to user
-linear-cli i move LIN-123 "Q2 Project"           # Move to project
-linear-cli i transfer LIN-123 ENG                # Transfer to team
-linear-cli i comment LIN-123 -b "LGTM"           # Add comment
-linear-cli i archive LIN-123                     # Archive
-linear-cli i open LIN-123                        # Open in browser
-linear-cli i link LIN-123                        # Print URL
+linear i start LIN-123 --checkout            # Start + checkout branch
+linear i stop LIN-123                        # Return to backlog
+linear i close LIN-123                       # Mark as Done
+linear i assign LIN-123 "Alice"              # Assign to user
+linear i move LIN-123 "Q2 Project"           # Move to project
+linear i transfer LIN-123 ENG                # Transfer to team
+linear i comment LIN-123 -b "LGTM"           # Add comment
+linear i archive LIN-123                     # Archive
+linear i open LIN-123                        # Open in browser
+linear i link LIN-123                        # Print URL
 ```
 
 **Create flags:** `--team`, `--description`, `--data`, `--priority`, `--state`, `--assignee`, `--labels`, `--due`, `--estimate`, `--project`, `--template`, `--dry-run`
@@ -110,18 +110,18 @@ linear-cli i link LIN-123                        # Print URL
 Full project CRUD with label management and archiving.
 
 ```bash
-linear-cli projects list                         # List all projects
-linear-cli p get "Q1 Roadmap"                    # Project details
-linear-cli p create "New Feature" -t ENG         # Create project
-linear-cli p update PROJECT_ID --name "Renamed"  # Update project
-linear-cli p members "Q1 Roadmap"                # List members
-linear-cli p add-labels PROJECT_ID bug           # Add labels
-linear-cli p remove-labels PROJECT_ID bug        # Remove labels
-linear-cli p set-labels PROJECT_ID bug feat      # Replace all labels
-linear-cli p archive PROJECT_ID                  # Archive
-linear-cli p unarchive PROJECT_ID                # Unarchive
-linear-cli p open "Q1 Roadmap"                   # Open in browser
-linear-cli p delete PROJECT_ID                   # Delete
+linear projects list                         # List all projects
+linear p get "Q1 Roadmap"                    # Project details
+linear p create "New Feature" -t ENG         # Create project
+linear p update PROJECT_ID --name "Renamed"  # Update project
+linear p members "Q1 Roadmap"                # List members
+linear p add-labels PROJECT_ID bug           # Add labels
+linear p remove-labels PROJECT_ID bug        # Remove labels
+linear p set-labels PROJECT_ID bug feat      # Replace all labels
+linear p archive PROJECT_ID                  # Archive
+linear p unarchive PROJECT_ID                # Unarchive
+linear p open "Q1 Roadmap"                   # Open in browser
+linear p delete PROJECT_ID                   # Delete
 ```
 
 ### Project Updates
@@ -129,35 +129,35 @@ linear-cli p delete PROJECT_ID                   # Delete
 Track project health with status updates (onTrack, atRisk, offTrack).
 
 ```bash
-linear-cli project-updates list PROJECT_ID       # List updates
-linear-cli pu get UPDATE_ID                      # Get update details
-linear-cli pu create PROJECT_ID -b "On track"    # Create update
-linear-cli pu update UPDATE_ID -b "Updated"      # Edit update
-linear-cli pu archive UPDATE_ID                  # Archive
-linear-cli pu unarchive UPDATE_ID                # Unarchive
+linear project-updates list PROJECT_ID       # List updates
+linear pu get UPDATE_ID                      # Get update details
+linear pu create PROJECT_ID -b "On track"    # Create update
+linear pu update UPDATE_ID -b "Updated"      # Edit update
+linear pu archive UPDATE_ID                  # Archive
+linear pu unarchive UPDATE_ID                # Unarchive
 ```
 
 ### Teams
 
 ```bash
-linear-cli teams list                            # List all teams
-linear-cli t get ENG                             # Team details
-linear-cli t members ENG                         # List members
-linear-cli t create "Platform" -k PLT            # Create team
-linear-cli t update TEAM_ID --name "Infra"       # Update team
-linear-cli t delete TEAM_ID                      # Delete team
+linear teams list                            # List all teams
+linear t get ENG                             # Team details
+linear t members ENG                         # List members
+linear t create "Platform" -k PLT            # Create team
+linear t update TEAM_ID --name "Infra"       # Update team
+linear t delete TEAM_ID                      # Delete team
 ```
 
 ### Cycles
 
 ```bash
-linear-cli cycles list -t ENG                    # List cycles
-linear-cli c current -t ENG                      # Current cycle
-linear-cli c get CYCLE_ID                        # Cycle details with issues
-linear-cli c create -t ENG --start 2026-03-01 --end 2026-03-14
-linear-cli c update CYCLE_ID --name "Sprint 5"
-linear-cli c complete CYCLE_ID                   # Complete cycle
-linear-cli c delete CYCLE_ID
+linear cycles list -t ENG                    # List cycles
+linear c current -t ENG                      # Current cycle
+linear c get CYCLE_ID                        # Cycle details with issues
+linear c create -t ENG --start 2026-03-01 --end 2026-03-14
+linear c update CYCLE_ID --name "Sprint 5"
+linear c complete CYCLE_ID                   # Complete cycle
+linear c delete CYCLE_ID
 ```
 
 ### Sprint Planning
@@ -165,91 +165,91 @@ linear-cli c delete CYCLE_ID
 Plan and manage cycle-based sprints with progress visualization, burndown charts, and velocity tracking.
 
 ```bash
-linear-cli sprint status -t ENG                  # Current sprint status
-linear-cli sp progress -t ENG                    # Progress bar visualization
-linear-cli sp plan -t ENG                        # Next sprint's planned issues
-linear-cli sp carry-over -t ENG --force          # Move incomplete to next cycle
-linear-cli sp burndown -t ENG                    # ASCII burndown chart
-linear-cli sp velocity -t ENG                    # Velocity across past 6 sprints
-linear-cli sp velocity -t ENG -n 10              # Velocity across past 10 sprints
+linear sprint status -t ENG                  # Current sprint status
+linear sp progress -t ENG                    # Progress bar visualization
+linear sp plan -t ENG                        # Next sprint's planned issues
+linear sp carry-over -t ENG --force          # Move incomplete to next cycle
+linear sp burndown -t ENG                    # ASCII burndown chart
+linear sp velocity -t ENG                    # Velocity across past 6 sprints
+linear sp velocity -t ENG -n 10              # Velocity across past 10 sprints
 ```
 
 ### Documents, Labels, Comments
 
 ```bash
 # Documents
-linear-cli documents list                        # List documents
-linear-cli d create "ADR-001" -c "Content..."    # Create document
-linear-cli d update DOC_ID -c "Updated"          # Update
-linear-cli d delete DOC_ID                       # Delete
+linear documents list                        # List documents
+linear d create "ADR-001" -c "Content..."    # Create document
+linear d update DOC_ID -c "Updated"          # Update
+linear d delete DOC_ID                       # Delete
 
 # Labels
-linear-cli labels list                           # List labels
-linear-cli l create "priority:p0" -c "#FF0000"   # Create with color
-linear-cli l update LABEL_ID -n "Renamed"        # Rename
-linear-cli l delete LABEL_ID                     # Delete
+linear labels list                           # List labels
+linear l create "priority:p0" -c "#FF0000"   # Create with color
+linear l update LABEL_ID -n "Renamed"        # Rename
+linear l delete LABEL_ID                     # Delete
 
 # Comments
-linear-cli comments list ISSUE_ID                # List comments
-linear-cli cm create ISSUE_ID -b "Comment text"  # Add comment
-linear-cli cm update COMMENT_ID -b "Edited"      # Edit
-linear-cli cm delete COMMENT_ID                  # Delete
+linear comments list ISSUE_ID                # List comments
+linear cm create ISSUE_ID -b "Comment text"  # Add comment
+linear cm update COMMENT_ID -b "Edited"      # Edit
+linear cm delete COMMENT_ID                  # Delete
 ```
 
 ### Milestones, Roadmaps, Initiatives
 
 ```bash
 # Milestones
-linear-cli milestones list -p "Q1 Roadmap"       # List project milestones
-linear-cli ms create "Beta" -p PROJECT_ID        # Create milestone
-linear-cli ms update MS_ID --name "GA"           # Update
-linear-cli ms delete MS_ID                       # Delete
+linear milestones list -p "Q1 Roadmap"       # List project milestones
+linear ms create "Beta" -p PROJECT_ID        # Create milestone
+linear ms update MS_ID --name "GA"           # Update
+linear ms delete MS_ID                       # Delete
 
 # Roadmaps
-linear-cli roadmaps list                         # List roadmaps
-linear-cli rm get ROADMAP_ID                     # Roadmap details
-linear-cli rm create "2026 Plan"                 # Create
-linear-cli rm update RM_ID --name "H1 2026"      # Update
-linear-cli rm delete RM_ID                       # Delete
+linear roadmaps list                         # List roadmaps
+linear rm get ROADMAP_ID                     # Roadmap details
+linear rm create "2026 Plan"                 # Create
+linear rm update RM_ID --name "H1 2026"      # Update
+linear rm delete RM_ID                       # Delete
 
 # Initiatives
-linear-cli initiatives list                      # List initiatives
-linear-cli init get INIT_ID                      # Initiative details
-linear-cli init create "Platform Migration"      # Create
-linear-cli init update INIT_ID --name "Renamed"  # Update
-linear-cli init delete INIT_ID                   # Delete
+linear initiatives list                      # List initiatives
+linear init get INIT_ID                      # Initiative details
+linear init create "Platform Migration"      # Create
+linear init update INIT_ID --name "Renamed"  # Update
+linear init delete INIT_ID                   # Delete
 ```
 
 ### Custom Views
 
 ```bash
-linear-cli views list                            # List saved views
-linear-cli v get VIEW_ID                         # View details
-linear-cli v create "My Bugs" -t ENG             # Create view
-linear-cli v update VIEW_ID --name "Open Bugs"   # Update
-linear-cli v delete VIEW_ID                      # Delete
-linear-cli i list --view "My Bugs"               # Apply view to issue list
+linear views list                            # List saved views
+linear v get VIEW_ID                         # View details
+linear v create "My Bugs" -t ENG             # Create view
+linear v update VIEW_ID --name "Open Bugs"   # Update
+linear v delete VIEW_ID                      # Delete
+linear i list --view "My Bugs"               # Apply view to issue list
 ```
 
 ### Relations
 
 ```bash
-linear-cli relations list LIN-123                # List relationships
-linear-cli rel add LIN-123 blocks LIN-456        # Add relation
-linear-cli rel remove LIN-123 blocks LIN-456     # Remove relation
-linear-cli rel parent LIN-456 LIN-123            # Set parent issue
-linear-cli rel unparent LIN-456                  # Remove parent
+linear relations list LIN-123                # List relationships
+linear rel add LIN-123 blocks LIN-456        # Add relation
+linear rel remove LIN-123 blocks LIN-456     # Remove relation
+linear rel parent LIN-456 LIN-123            # Set parent issue
+linear rel unparent LIN-456                  # Remove parent
 ```
 
 ### Attachments
 
 ```bash
-linear-cli attachments list ISSUE_ID             # List attachments
-linear-cli att get ATTACHMENT_ID                 # Get details
-linear-cli att create ISSUE_ID -u URL -t "Doc"   # Create attachment
-linear-cli att link-url ISSUE_ID URL             # Link a URL
-linear-cli att update ATTACHMENT_ID -t "New"     # Update
-linear-cli att delete ATTACHMENT_ID              # Delete
+linear attachments list ISSUE_ID             # List attachments
+linear att get ATTACHMENT_ID                 # Get details
+linear att create ISSUE_ID -u URL -t "Doc"   # Create attachment
+linear att link-url ISSUE_ID URL             # Link a URL
+linear att update ATTACHMENT_ID -t "New"     # Update
+linear att delete ATTACHMENT_ID              # Delete
 ```
 
 ### Templates
@@ -258,58 +258,58 @@ Local templates and Linear workspace (remote) templates.
 
 ```bash
 # Local templates
-linear-cli templates list                        # List local templates
-linear-cli tpl create bug --team ENG --priority 2 --label bug
-linear-cli --dry-run --output json tpl create bug --team ENG
-linear-cli tpl show TEMPLATE_NAME                # Show details
-linear-cli tpl delete TEMPLATE_NAME --force      # Delete
+linear templates list                        # List local templates
+linear tpl create bug --team ENG --priority 2 --label bug
+linear --dry-run --output json tpl create bug --team ENG
+linear tpl show TEMPLATE_NAME                # Show details
+linear tpl delete TEMPLATE_NAME --force      # Delete
 
 # Linear workspace templates
-linear-cli tpl remote-list                       # List API templates
-linear-cli tpl remote-get TEMPLATE_ID            # Get template
-linear-cli tpl remote-create -n "Bug Report" --type issue
-linear-cli tpl remote-update TEMPLATE_ID         # Update
-linear-cli tpl remote-delete TEMPLATE_ID         # Delete
+linear tpl remote-list                       # List API templates
+linear tpl remote-get TEMPLATE_ID            # Get template
+linear tpl remote-create -n "Bug Report" --type issue
+linear tpl remote-update TEMPLATE_ID         # Update
+linear tpl remote-delete TEMPLATE_ID         # Delete
 ```
 
 ### Notifications
 
 ```bash
-linear-cli notifications list                    # Unread notifications
-linear-cli n count                               # Unread count
-linear-cli n read NOTIFICATION_ID                # Mark as read
-linear-cli n read-all                            # Mark all as read
-linear-cli n archive NOTIFICATION_ID             # Archive one
-linear-cli n archive-all                         # Archive all
+linear notifications list                    # Unread notifications
+linear n count                               # Unread count
+linear n read NOTIFICATION_ID                # Mark as read
+linear n read-all                            # Mark all as read
+linear n archive NOTIFICATION_ID             # Archive one
+linear n archive-all                         # Archive all
 ```
 
 ### Statuses & Time Tracking
 
 ```bash
 # Statuses
-linear-cli statuses list -t ENG                  # List workflow states
-linear-cli st update STATUS_ID --name "Review"   # Rename a status
+linear statuses list -t ENG                  # List workflow states
+linear st update STATUS_ID --name "Review"   # Rename a status
 
 # Time tracking
-linear-cli time list ISSUE_ID                    # List time entries
-linear-cli tm update ENTRY_ID --hours 2.5        # Update entry
+linear time list ISSUE_ID                    # List time entries
+linear tm update ENTRY_ID --hours 2.5        # Update entry
 ```
 
 ### Favorites
 
 ```bash
-linear-cli favorites list                        # List favorites
-linear-cli fav add ISSUE_ID                      # Add to favorites
-linear-cli fav remove FAVORITE_ID                # Remove
+linear favorites list                        # List favorites
+linear fav add ISSUE_ID                      # Add to favorites
+linear fav remove FAVORITE_ID                # Remove
 ```
 
 ### Users
 
 ```bash
-linear-cli users list                            # List workspace users
-linear-cli u me                                  # Current user
-linear-cli u get "alice@example.com"             # Look up a user
-linear-cli whoami                                # Alias for `users me`
+linear users list                            # List workspace users
+linear u me                                  # Current user
+linear u get "alice@example.com"             # Look up a user
+linear whoami                                # Alias for `users me`
 ```
 
 ### Webhooks
@@ -317,13 +317,13 @@ linear-cli whoami                                # Alias for `users me`
 Full CRUD plus a local listener with HMAC-SHA256 signature verification.
 
 ```bash
-linear-cli webhooks list                         # List webhooks
-linear-cli wh get WEBHOOK_ID                     # Webhook details
-linear-cli wh create https://hook.example.com    # Create webhook
-linear-cli wh update WEBHOOK_ID --url NEW_URL    # Update
-linear-cli wh rotate-secret WEBHOOK_ID           # Rotate signing secret
-linear-cli wh delete WEBHOOK_ID                  # Delete
-linear-cli wh listen --port 8080                 # Start local listener
+linear webhooks list                         # List webhooks
+linear wh get WEBHOOK_ID                     # Webhook details
+linear wh create https://hook.example.com    # Create webhook
+linear wh update WEBHOOK_ID --url NEW_URL    # Update
+linear wh rotate-secret WEBHOOK_ID           # Rotate signing secret
+linear wh delete WEBHOOK_ID                  # Delete
+linear wh listen --port 8080                 # Start local listener
 ```
 
 ### Watch Mode
@@ -331,26 +331,26 @@ linear-cli wh listen --port 8080                 # Start local listener
 Poll for real-time changes to issues, projects, or teams.
 
 ```bash
-linear-cli watch issue LIN-123                   # Watch an issue
-linear-cli w project PROJECT_ID                  # Watch a project
-linear-cli w team ENG                            # Watch a team
+linear watch issue LIN-123                   # Watch an issue
+linear w project PROJECT_ID                  # Watch a project
+linear w team ENG                            # Watch a team
 ```
 
 ### Triage
 
 ```bash
-linear-cli triage list -t ENG                    # Unassigned issues
-linear-cli tr claim LIN-123                      # Assign to self
-linear-cli tr snooze LIN-123                     # Snooze for later
+linear triage list -t ENG                    # Unassigned issues
+linear tr claim LIN-123                      # Assign to self
+linear tr snooze LIN-123                     # Snooze for later
 ```
 
 ### Bulk Operations
 
 ```bash
-linear-cli bulk update-state Done -i LIN-1,LIN-2   # Bulk status update
-linear-cli b assign "Alice" -i LIN-1,LIN-2         # Bulk assign
-linear-cli b label bug -i LIN-1,LIN-2              # Bulk add label
-linear-cli b unassign -i LIN-1,LIN-2               # Bulk unassign
+linear bulk update-state Done -i LIN-1,LIN-2   # Bulk status update
+linear b assign "Alice" -i LIN-1,LIN-2         # Bulk assign
+linear b label bug -i LIN-1,LIN-2              # Bulk add label
+linear b unassign -i LIN-1,LIN-2               # Bulk unassign
 ```
 
 ### Git Integration
@@ -358,12 +358,12 @@ linear-cli b unassign -i LIN-1,LIN-2               # Bulk unassign
 Works with both Git and Jujutsu (jj).
 
 ```bash
-linear-cli git checkout LIN-123                  # Create + checkout branch
-linear-cli g branch LIN-123                      # Show branch name
-linear-cli g create LIN-123                      # Create branch (no checkout)
-linear-cli g commits                             # Commits with Linear trailers (jj)
-linear-cli g pr LIN-123 --draft                  # Create GitHub PR
-linear-cli g review-url LIN-123                  # Linear review URL for the issue's PR
+linear git checkout LIN-123                  # Create + checkout branch
+linear g branch LIN-123                      # Show branch name
+linear g create LIN-123                      # Create branch (no checkout)
+linear g commits                             # Commits with Linear trailers (jj)
+linear g pr LIN-123 --draft                  # Create GitHub PR
+linear g review-url LIN-123                  # Linear review URL for the issue's PR
 ```
 
 `review-url` reads the review URL from the issue's pull request notifications —
@@ -384,25 +384,25 @@ Round-trip CSV and JSON import/export with field resolution for status, assignee
 
 ```bash
 # Import
-linear-cli import csv issues.csv -t ENG          # Import from CSV
-linear-cli import json issues.json -t ENG        # Import from JSON
-linear-cli import csv issues.csv -t ENG --dry-run  # Preview without creating
+linear import csv issues.csv -t ENG          # Import from CSV
+linear import json issues.json -t ENG        # Import from JSON
+linear import csv issues.csv -t ENG --dry-run  # Preview without creating
 
 # Export
-linear-cli export csv -t ENG -f issues.csv       # Export issues to CSV
-linear-cli export json -t ENG -f issues.json     # Export issues to JSON
-linear-cli export markdown -t ENG                # Export to Markdown
-linear-cli export projects-csv -f projects.csv   # Export projects to CSV
+linear export csv -t ENG -f issues.csv       # Export issues to CSV
+linear export json -t ENG -f issues.json     # Export issues to JSON
+linear export markdown -t ENG                # Export to Markdown
+linear export projects-csv -f projects.csv   # Export projects to CSV
 ```
 
 ### Search & Context
 
 ```bash
-linear-cli search issues "auth bug"              # Search issues
-linear-cli s projects "platform"                 # Search projects
-linear-cli context                               # Issue from current git branch
-linear-cli history LIN-123                       # Activity timeline
-linear-cli metrics -t ENG                        # Team velocity and stats
+linear search issues "auth bug"              # Search issues
+linear s projects "platform"                 # Search projects
+linear context                               # Issue from current git branch
+linear history LIN-123                       # Activity timeline
+linear metrics -t ENG                        # Team velocity and stats
 ```
 
 ### Raw GraphQL
@@ -410,17 +410,17 @@ linear-cli metrics -t ENG                        # Team velocity and stats
 Direct API access for anything not covered by built-in commands.
 
 ```bash
-linear-cli api query '{ viewer { name email } }'
-linear-cli api mutate 'mutation { issueUpdate(id: "...", input: { ... }) { success } }'
+linear api query '{ viewer { name email } }'
+linear api mutate 'mutation { issueUpdate(id: "...", input: { ... }) { success } }'
 ```
 
 ### Other Commands
 
 ```bash
-linear-cli done                                  # Mark current branch issue as Done
-linear-cli interactive                           # TUI for browsing/managing issues
-linear-cli sync status                           # Compare local folders with Linear
-linear-cli sync push                             # Create Linear projects from folders
+linear done                                  # Mark current branch issue as Done
+linear interactive                           # TUI for browsing/managing issues
+linear sync status                           # Compare local folders with Linear
+linear sync push                             # Create Linear projects from folders
 ```
 
 ## Authentication
@@ -431,13 +431,13 @@ Two authentication methods are supported. Both can be used per-profile.
 
 ```bash
 # Set directly
-printf '%s\n' "$LINEAR_API_KEY" | linear-cli config set-key
+printf '%s\n' "$LINEAR_API_KEY" | linear config set-key
 
 # Or interactive login
-linear-cli auth login
+linear auth login
 
 # Store in OS keyring (requires --features secure-storage)
-linear-cli auth login --secure
+linear auth login --secure
 
 # Or use environment variable (highest priority)
 export LINEAR_API_KEY=lin_api_xxx
@@ -448,14 +448,14 @@ export LINEAR_API_KEY=lin_api_xxx
 Browser-based Authorization Code + PKCE flow with automatic token refresh.
 
 ```bash
-linear-cli auth oauth          # Opens browser for authorization
-linear-cli auth oauth --secure # Store OAuth tokens in OS keyring (best on official release builds)
-linear-cli auth status         # Show auth type, token expiry
-linear-cli auth revoke         # Revoke OAuth tokens
-linear-cli auth logout         # Remove stored credentials
+linear auth oauth          # Opens browser for authorization
+linear auth oauth --secure # Store OAuth tokens in OS keyring (best on official release builds)
+linear auth status         # Show auth type, token expiry
+linear auth revoke         # Revoke OAuth tokens
+linear auth logout         # Remove stored credentials
 ```
 
-> `--secure` needs a build with `--features secure-storage` (enables OS backends: Keychain, Credential Manager, Secret Service). On macOS Keychain, unsigned local builds can still prompt repeatedly or fail readback — if that happens, use an official release, plain `linear-cli auth oauth`, or `LINEAR_API_KEY`.
+> `--secure` needs a build with `--features secure-storage` (enables OS backends: Keychain, Credential Manager, Secret Service). On macOS Keychain, unsigned local builds can still prompt repeatedly or fail readback — if that happens, use an official release, plain `linear auth oauth`, or `LINEAR_API_KEY`.
 
 **Auth priority:** `LINEAR_API_KEY` env var > OS keyring > OAuth tokens > config file API key.
 
@@ -464,31 +464,31 @@ linear-cli auth logout         # Remove stored credentials
 Config is stored at `~/.config/linear-cli/config.toml` (Linux/macOS) or `%APPDATA%\linear-cli\config.toml` (Windows).
 
 ```bash
-linear-cli config show                           # Show current config
-linear-cli config get default-team               # Get default team
-linear-cli config set default-team ENG           # Set default team
+linear config show                           # Show current config
+linear config get default-team               # Get default team
+linear config set default-team ENG           # Set default team
 # also accepted: default_team, team
 
 # Multiple workspaces
-linear-cli config workspace-add work             # Add workspace profile
-linear-cli config workspace-list                 # List profiles
-linear-cli config workspace-switch work          # Switch active profile
-linear-cli config workspace-current              # Show current
-linear-cli config workspace-remove work          # Remove profile
+linear config workspace-add work             # Add workspace profile
+linear config workspace-list                 # List profiles
+linear config workspace-switch work          # Switch active profile
+linear config workspace-current              # Show current
+linear config workspace-remove work          # Remove profile
 
 # Per-invocation profile override
-linear-cli --profile work i list
+linear --profile work i list
 export LINEAR_CLI_PROFILE=work
 ```
 
 ### Setup & Diagnostics
 
 ```bash
-linear-cli setup                                 # Guided onboarding wizard
-linear-cli doctor                                # Check config + connectivity
-linear-cli doctor --fix                          # Auto-remediate issues
-linear-cli cache status                          # Cache stats
-linear-cli cache clear                           # Clear cache
+linear setup                                 # Guided onboarding wizard
+linear doctor                                # Check config + connectivity
+linear doctor --fix                          # Auto-remediate issues
+linear cache status                          # Cache stats
+linear cache clear                           # Clear cache
 ```
 
 ## Shell Completions
@@ -499,16 +499,16 @@ Generate tab completions for command names and flags.
 
 ```bash
 # Bash
-linear-cli completions static bash > ~/.bash_completion.d/linear-cli
+linear completions static bash > ~/.bash_completion.d/linear-cli
 
 # Zsh
-linear-cli completions static zsh > ~/.zfunc/_linear-cli
+linear completions static zsh > ~/.zfunc/_linear-cli
 
 # Fish
-linear-cli completions static fish > ~/.config/fish/completions/linear-cli.fish
+linear completions static fish > ~/.config/fish/completions/linear-cli.fish
 
 # PowerShell
-linear-cli completions static powershell > linear-cli.ps1
+linear completions static powershell > linear-cli.ps1
 ```
 
 ### Dynamic Completions
@@ -516,17 +516,17 @@ linear-cli completions static powershell > linear-cli.ps1
 Context-aware completions that query the Linear API for team names, project names, issue identifiers, statuses, and more.
 
 ```bash
-linear-cli completions dynamic bash              # Dynamic bash completions
-linear-cli completions dynamic zsh               # Dynamic zsh completions
-linear-cli completions dynamic fish              # Dynamic fish completions
-linear-cli completions dynamic powershell        # Dynamic PowerShell completions
+linear completions dynamic bash              # Dynamic bash completions
+linear completions dynamic zsh               # Dynamic zsh completions
+linear completions dynamic fish              # Dynamic fish completions
+linear completions dynamic powershell        # Dynamic PowerShell completions
 ```
 
-Legacy alias: `linear-cli config completions <shell>` also generates static completions.
+Legacy alias: `linear config completions <shell>` also generates static completions.
 
 ## Agent & Automation Usage
 
-linear-cli is designed to work well with AI agents and scripts. Every command supports machine-readable output.
+`linear-cli` is designed to work well with AI agents and scripts. Every command supports machine-readable output.
 
 ### Output Flags
 
@@ -553,22 +553,22 @@ To allow an absolute `PAGER` path you explicitly trust, set `LINEAR_CLI_TRUST_PA
 
 ```bash
 # Get issue ID for chaining
-ID=$(linear-cli i create "Bug" -t ENG --id-only --quiet)
+ID=$(linear i create "Bug" -t ENG --id-only --quiet)
 
 # JSON output for programmatic consumption
-linear-cli i list --output json --fields identifier,title,state.name --compact
+linear i list --output json --fields identifier,title,state.name --compact
 
 # Pipe description from file
-cat desc.md | linear-cli i create "Title" -t ENG -d -
+cat desc.md | linear i create "Title" -t ENG -d -
 
 # JSON input for structured create/update
-cat issue.json | linear-cli i create "Title" -t ENG --data -
+cat issue.json | linear i create "Title" -t ENG --data -
 
 # Default JSON for entire session
 export LINEAR_CLI_OUTPUT=json
 
 # Batch get with structured output
-linear-cli i get LIN-1 LIN-2 LIN-3 --output json --compact
+linear i get LIN-1 LIN-2 LIN-3 --output json --compact
 ```
 
 ### Exit Codes
@@ -584,14 +584,14 @@ linear-cli i get LIN-1 LIN-2 LIN-3 --output json --compact
 ### Pagination
 
 ```bash
-linear-cli i list --limit 25                     # Limit results
-linear-cli i list --all --page-size 100           # Fetch all pages
-linear-cli i list --after CURSOR                  # Cursor-based pagination
+linear i list --limit 25                     # Limit results
+linear i list --all --page-size 100           # Fetch all pages
+linear i list --after CURSOR                  # Cursor-based pagination
 ```
 
 ## Agent Skills
 
-linear-cli includes Agent Skills for AI coding assistants (Claude Code, Cursor, Codex, etc.).
+`linear-cli` includes Agent Skills for AI coding assistants (Claude Code, Cursor, Codex, etc.).
 
 ```bash
 # Install all skills
@@ -629,7 +629,7 @@ npx skills add nesszer/linear-cli --skill linear-workflow
 - The OAuth callback server binds to `127.0.0.1` and validates `state` plus PKCE before token exchange.
 - The webhook listener defaults to `127.0.0.1`, verifies HMAC-SHA256 signatures, and enforces header/body limits.
 - Upload fetching is restricted to `https://uploads.linear.app`.
-- The update flow checks GitHub Releases and runs explicit Cargo commands without a shell. Install attempts can come from `linear-cli update` or from the interactive startup prompt path.
+- The update flow checks GitHub Releases and runs explicit Cargo commands without a shell. Install attempts can come from `linear update` or from the interactive startup prompt path.
 
 See [SECURITY.md](SECURITY.md) for reporting guidance and [docs/security-threat-model.md](docs/security-threat-model.md) for the detailed repository threat model.
 

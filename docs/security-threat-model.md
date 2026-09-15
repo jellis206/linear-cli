@@ -1,4 +1,4 @@
-# linear-cli threat model
+# linear threat model
 
 This document is a repo-grounded security overview for `linear-cli`. It is focused on the real runtime behavior of the CLI in this repository, not generic web-app risks.
 
@@ -28,7 +28,7 @@ Most operations run locally and make outbound HTTPS requests to Linear or GitHub
 ```mermaid
 flowchart TD
     User["User terminal"]
-    CLI["linear-cli process"]
+    CLI["linear process"]
     Disk["Config cache exports"]
     Keyring["OS keyring"]
     Linear["Linear APIs"]
@@ -70,9 +70,9 @@ Key assets:
 - CLI arguments, stdin, and environment variables such as `LINEAR_API_KEY` and `LINEAR_CLI_PROFILE`
 - CSV and JSON import files plus arbitrary export destination paths
 - issue titles, descriptions, comments, and other Linear data created by other workspace users
-- webhook HTTP requests when `linear-cli webhooks listen` is running
+- webhook HTTP requests when `linear webhooks listen` is running
 - OAuth callback requests sent to localhost during OAuth login
-- GitHub release metadata consumed by `linear-cli update`
+- GitHub release metadata consumed by `linear update`
 - PATH-resolved binaries if the local machine is hostile
 
 ### Operator-controlled inputs
@@ -113,13 +113,13 @@ Key assets:
 
 ### OAuth callback server
 
-- **Surface:** Temporary local HTTP listener used during `linear-cli auth oauth`. Evidence: `src/oauth.rs`, `src/commands/auth.rs`.
+- **Surface:** Temporary local HTTP listener used during `linear auth oauth`. Evidence: `src/oauth.rs`, `src/commands/auth.rs`.
 - **Mitigations present:** The listener binds to `127.0.0.1`, only accepts a single callback connection, enforces a 5-minute overall timeout and per-read timeout, only accepts `GET` requests for the exact `/callback` endpoint, validates the `state` value, uses PKCE, and HTML-escapes reflected OAuth error text. Evidence: `src/oauth.rs`.
 - **Attacker story:** A local adversary or malicious local process tries to race the callback request or inject an attacker-controlled code value. State validation and PKCE block straightforward CSRF-style token injection, so exploitation would require stronger local compromise.
 
 ### Webhook listener
 
-- **Surface:** Optional local HTTP listener for `linear-cli webhooks listen`, with a configurable bind address and optional public tunnel URL. Evidence: `src/commands/webhooks.rs`.
+- **Surface:** Optional local HTTP listener for `linear webhooks listen`, with a configurable bind address and optional public tunnel URL. Evidence: `src/commands/webhooks.rs`.
 - **Mitigations present:** HMAC-SHA256 verification via `linear-signature`, constant-time verification through the HMAC implementation, `POST`-only handling for the exact `/webhook` endpoint, 8 KB header limit, 1 MB body limit, read timeouts, JSON parsing checks, and cleanup of the temporary Linear webhook on shutdown or some startup failures. Evidence: `src/commands/webhooks.rs`.
 - **Attacker story:** If a user binds to `0.0.0.0` behind a public tunnel, an attacker can send repeated connection attempts or oversized requests to consume local resources. Signature checks prevent forged event processing, but availability remains a medium-risk concern for long-running listeners exposed to the internet.
 
@@ -143,8 +143,8 @@ Key assets:
 
 ### Update workflow
 
-- **Surface:** `linear-cli update` checks GitHub Releases and then runs local Cargo tooling. Evidence: `src/commands/update.rs`.
-- **Mitigations present:** The command plan is explicit, draft and prerelease GitHub releases are rejected, and the updater launches `cargo` directly rather than executing a shell string. Installation only runs through the explicit `linear-cli update` command path rather than opportunistically from unrelated commands. Evidence: `src/main.rs`, `src/commands/update.rs`.
+- **Surface:** `linear update` checks GitHub Releases and then runs local Cargo tooling. Evidence: `src/commands/update.rs`.
+- **Mitigations present:** The command plan is explicit, draft and prerelease GitHub releases are rejected, and the updater launches `cargo` directly rather than executing a shell string. Installation only runs through the explicit `linear update` command path rather than opportunistically from unrelated commands. Evidence: `src/main.rs`, `src/commands/update.rs`.
 - **Attacker story:** A compromised local Cargo installation, hostile PATH, or supply-chain compromise could turn a user-initiated update into execution of attacker-controlled code. This is a supply-chain and local trust problem, not an unauthenticated network-RCE path in the CLI itself.
 
 ### Out-of-scope or low-relevance classes

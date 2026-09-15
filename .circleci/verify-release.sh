@@ -51,7 +51,7 @@ for spec in "${target_specs[@]}"; do
     grep -Eq "$file_pattern" <<<"$file_description"
     if [[ "$checks_version" == "true" ]]; then
       reported="$($binary_path --version)"
-      test "$reported" = "linear-cli $version"
+      test "$reported" = "linear $version"
     fi
   else
     test "$(unzip -Z1 "release/$archive" | tr -d '\r')" = "$binary"

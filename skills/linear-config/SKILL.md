@@ -8,42 +8,42 @@ allowed-tools: Bash
 
 ```bash
 # First-time setup wizard
-linear-cli setup
+linear setup
 
 # Set API key
-linear-cli config set-key YOUR_API_KEY
+linear config set-key YOUR_API_KEY
 
 # Show config
-linear-cli config show
+linear config show
 
 # Auth commands
-linear-cli auth login                # Store API key
-linear-cli auth oauth                # OAuth 2.0 browser flow (PKCE)
-linear-cli auth oauth --client-id ID # Custom OAuth app
-linear-cli auth status               # Check auth status (shows type, expiry)
-linear-cli auth revoke               # Revoke OAuth tokens
-linear-cli auth logout               # Remove key
+linear auth login                # Store API key
+linear auth oauth                # OAuth 2.0 browser flow (PKCE)
+linear auth oauth --client-id ID # Custom OAuth app
+linear auth status               # Check auth status (shows type, expiry)
+linear auth revoke               # Revoke OAuth tokens
+linear auth logout               # Remove key
 
 # Workspaces
-linear-cli config workspace-add work KEY
-linear-cli config workspace-list
-linear-cli config workspace-switch work
-linear-cli config workspace-current
+linear config workspace-add work KEY
+linear config workspace-list
+linear config workspace-switch work
+linear config workspace-current
 
 # Profiles
-linear-cli --profile work i list     # Use profile
+linear --profile work i list     # Use profile
 
 # Diagnostics
-linear-cli doctor                    # Check config and connectivity
-linear-cli doctor --fix              # Auto-fix common issues
+linear doctor                    # Check config and connectivity
+linear doctor --fix              # Auto-fix common issues
 
 # Shell completions (static)
-linear-cli config completions bash > ~/.bash_completion.d/linear-cli
+linear config completions bash > ~/.bash_completion.d/linear-cli
 
 # Shell completions (dynamic, context-aware)
-linear-cli completions dynamic bash >> ~/.bashrc
-linear-cli completions dynamic zsh >> ~/.zshrc
-linear-cli completions dynamic fish >> ~/.config/fish/completions/linear-cli.fish
+linear completions dynamic bash >> ~/.bashrc
+linear completions dynamic zsh >> ~/.zshrc
+linear completions dynamic fish >> ~/.config/fish/completions/linear-cli.fish
 ```
 
 ## Environment Variables

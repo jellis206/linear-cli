@@ -3,21 +3,21 @@
 Use `linear-cli` for all Linear.app operations. Do not use Linear MCP tools.
 
 ### Commands
-- `linear-cli i list` - List issues
-- `linear-cli i list -t TEAM` - List team's issues
-- `linear-cli i create "Title" -t TEAM` - Create issue
-- `linear-cli i get LIN-123` - View issue details
-- `linear-cli i get LIN-1 LIN-2 LIN-3` - Batch fetch multiple issues
-- `linear-cli i get LIN-123 --output json` - View as JSON
-- `linear-cli i update LIN-123 -s Done` - Update status
-- `linear-cli i start LIN-123 --checkout` - Start work (assign + branch)
-- `linear-cli g pr LIN-123` - Create GitHub PR
-- `linear-cli g pr LIN-123 --draft` - Create draft PR
-- `linear-cli s issues "query"` - Search issues
-- `linear-cli context` - Get current issue from git branch
-- `linear-cli update` - Check for and install the latest CLI release
-- `linear-cli cm list ISSUE_ID --output json` - Get comments as JSON
-- `linear-cli up fetch URL -f file.png` - Download attachments
+- `linear i list` - List issues
+- `linear i list -t TEAM` - List team's issues
+- `linear i create "Title" -t TEAM` - Create issue
+- `linear i get LIN-123` - View issue details
+- `linear i get LIN-1 LIN-2 LIN-3` - Batch fetch multiple issues
+- `linear i get LIN-123 --output json` - View as JSON
+- `linear i update LIN-123 -s Done` - Update status
+- `linear i start LIN-123 --checkout` - Start work (assign + branch)
+- `linear g pr LIN-123` - Create GitHub PR
+- `linear g pr LIN-123 --draft` - Create draft PR
+- `linear s issues "query"` - Search issues
+- `linear context` - Get current issue from git branch
+- `linear update` - Check for and install the latest CLI release
+- `linear cm list ISSUE_ID --output json` - Get comments as JSON
+- `linear up fetch URL -f file.png` - Download attachments
 
 ### Agent-Friendly Flags
 - `--output json` - Machine-readable output
@@ -41,9 +41,9 @@ Use `linear-cli` for all Linear.app operations. Do not use Linear MCP tools.
 ### Notes
 - Set `LINEAR_CLI_OUTPUT=json` to default all output to JSON
 - Errors with `--output json` return `{"error": true, "message": "...", "code": N, "details": {...}, "retry_after": N}`
-- `linear-cli i create/update` accept `--data` JSON input (use `-` for stdin)
-- `linear-cli agent` prints agent-focused capabilities and examples
-- `linear-cli update --check` reports current vs latest release without installing
+- `linear i create/update` accept `--data` JSON input (use `-` for stdin)
+- `linear agent` prints agent-focused capabilities and examples
+- `linear update --check` reports current vs latest release without installing
 - JSON samples live in `docs/json/`
 - Use `--help` on any command for full options
 

@@ -6,17 +6,17 @@ Use `linear-cli` for all Linear.app operations. Do NOT use Linear MCP tools - CL
 
 | Task | Command |
 |------|---------|
-| List issues | `linear-cli i list` |
-| Create issue | `linear-cli i create "Title" -t TEAM -p 2` |
-| View issue | `linear-cli i get LIN-123` |
-| Get multiple | `linear-cli i get LIN-1 LIN-2 LIN-3` |
-| Start work | `linear-cli i start LIN-123 --checkout` |
-| Update status | `linear-cli i update LIN-123 -s Done` |
-| Create PR | `linear-cli g pr LIN-123` |
-| Search | `linear-cli s issues "query"` |
-| Get context | `linear-cli context` |
-| Get comments | `linear-cli cm list ISSUE_ID --output json` |
-| Download upload | `linear-cli up fetch URL -f file.png` |
+| List issues | `linear i list` |
+| Create issue | `linear i create "Title" -t TEAM -p 2` |
+| View issue | `linear i get LIN-123` |
+| Get multiple | `linear i get LIN-1 LIN-2 LIN-3` |
+| Start work | `linear i start LIN-123 --checkout` |
+| Update status | `linear i update LIN-123 -s Done` |
+| Create PR | `linear g pr LIN-123` |
+| Search | `linear s issues "query"` |
+| Get context | `linear context` |
+| Get comments | `linear cm list ISSUE_ID --output json` |
+| Download upload | `linear up fetch URL -f file.png` |
 
 ### Agent-Friendly Options
 
@@ -37,37 +37,37 @@ Use `linear-cli` for all Linear.app operations. Do NOT use Linear MCP tools - CL
 
 ```bash
 # Get current issue from branch
-linear-cli context --output json
+linear context --output json
 
 # Create and get ID for chaining
-linear-cli i create "Bug" -t ENG --id-only
+linear i create "Bug" -t ENG --id-only
 
 # Quiet create, capture ID
-ID=$(linear-cli i create "Task" -t ENG -q --id-only)
+ID=$(linear i create "Task" -t ENG -q --id-only)
 
 # Preview without creating
-linear-cli i create "Test" -t ENG --dry-run
+linear i create "Test" -t ENG --dry-run
 
 # Batch fetch multiple issues
-linear-cli i get LIN-1 LIN-2 LIN-3 --output json
+linear i get LIN-1 LIN-2 LIN-3 --output json
 
 # Pipe description from file
-cat desc.md | linear-cli i create "Title" -t ENG -d -
+cat desc.md | linear i create "Title" -t ENG -d -
 
 # JSON input for issue create/update
-cat issue.json | linear-cli i create "Title" -t ENG --data -
+cat issue.json | linear i create "Title" -t ENG --data -
 
 # Structured error handling
-linear-cli i get INVALID --output json  # Returns {"error": true, ...}
+linear i get INVALID --output json  # Returns {"error": true, ...}
 
 # Token-saving JSON output
-linear-cli i list --output json --fields identifier,title,state.name --compact
+linear i list --output json --fields identifier,title,state.name --compact
 
 # Default JSON output for agent sessions
-LINEAR_CLI_OUTPUT=json linear-cli i list
+LINEAR_CLI_OUTPUT=json linear i list
 
 # Agent harness summary
-linear-cli agent
+linear agent
 ```
 
 ### Exit Codes
@@ -79,4 +79,4 @@ linear-cli agent
 
 ### Tips
 - Use short aliases: `i` (issues), `p` (projects), `g` (git), `s` (search), `cm` (comments), `ctx` (context)
-- Run `linear-cli <command> --help` for full options
+- Run `linear <command> --help` for full options

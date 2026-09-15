@@ -84,7 +84,7 @@ pub async fn handle(check: bool, output: &OutputOptions, _agent_opts: AgentOptio
 
     if !output.is_json() && !output.has_template() {
         println!(
-            "Updating linear-cli from {} to {}",
+            "Updating linear from {} to {}",
             status.current_version,
             status.latest_version.as_deref().unwrap_or("latest")
         );
@@ -140,7 +140,7 @@ pub async fn maybe_prompt_for_update(auto_confirm: bool) -> Result<Option<i32>> 
 
     if auto_confirm {
         eprintln!(
-            "A newer linear-cli release is available ({} -> {}). Updating now...",
+            "A newer linear release is available ({} -> {}). Updating now...",
             status.current_version, latest
         );
         run_update_workflow(cfg!(feature = "secure-storage"))?;
@@ -152,7 +152,7 @@ pub async fn maybe_prompt_for_update(auto_confirm: bool) -> Result<Option<i32>> 
     let choices = ["Update now", "Stay on current version"];
     let selection = Select::with_theme(&ColorfulTheme::default())
         .with_prompt(format!(
-            "A newer linear-cli release is available ({} -> {}).",
+            "A newer linear release is available ({} -> {}).",
             status.current_version, latest
         ))
         .items(&choices)
@@ -385,13 +385,13 @@ fn print_update_status(output: &OutputOptions, status: &UpdateStatus) -> Result<
     match status.latest_version.as_deref() {
         Some(latest) if status.update_available => {
             println!(
-                "linear-cli {} is installed. {} is available.",
+                "linear {} is installed. {} is available.",
                 status.current_version, latest
             );
-            println!("Run `linear-cli update` to upgrade.");
+            println!("Run `linear update` to upgrade.");
         }
         _ => {
-            println!("linear-cli {} is up to date.", status.current_version);
+            println!("linear {} is up to date.", status.current_version);
         }
     }
 

@@ -16,7 +16,7 @@ exclude = [
 ]
 
 [[bin]]
-name = "linear-cli"
+name = "linear"
 path = "src/main.rs"
 
 [dependencies]

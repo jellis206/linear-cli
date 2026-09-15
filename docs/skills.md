@@ -133,7 +133,7 @@ allowed-tools: Bash
 # List/Get Issues
 
 \`\`\`bash
-linear-cli i list --output json
+linear i list --output json
 \`\`\`
 ```
 
@@ -153,6 +153,6 @@ npx skills update
 # Remove specific skill
 npx skills remove --skill linear-list
 
-# Remove all linear-cli skills
+# Remove all linear skills
 npx skills remove nesszer/linear-cli
 ```

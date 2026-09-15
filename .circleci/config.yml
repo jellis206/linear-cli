@@ -42,15 +42,15 @@ commands:
           command: |
             set -euo pipefail
             target="<< parameters.target >>"
-            binary="target/$target/release/linear-cli"
+            binary="target/$target/release/linear"
             artifact_dir="artifacts/$target"
             test -x "$binary"
             cargo_version="$(awk -F'"' '/^version = "/ { print $2; exit }' Cargo.toml)"
             test -n "$cargo_version"
             mkdir -p "$artifact_dir"
             printf 'linear-cli %s' "$cargo_version" > "$artifact_dir/version.txt"
-            tar -C "target/$target/release" -czf "$artifact_dir/linear-cli-$target.tar.gz" linear-cli
-            tar -tzf "$artifact_dir/linear-cli-$target.tar.gz" | grep -qx 'linear-cli'
+            tar -C "target/$target/release" -czf "$artifact_dir/linear-cli-$target.tar.gz" linear
+            tar -tzf "$artifact_dir/linear-cli-$target.tar.gz" | grep -qx 'linear'
       - persist_to_workspace:
           root: .
           paths:
@@ -121,8 +121,8 @@ jobs:
             set -euo pipefail
             export PATH="$HOME/.cargo/bin:$PATH"
             version="$(awk -F'"' '/^version = "/ { print $2; exit }' Cargo.toml)"
-            reported="$(target/x86_64-unknown-linux-gnu/release/linear-cli --version)"
-            test "$reported" = "linear-cli $version"
+            reported="$(target/x86_64-unknown-linux-gnu/release/linear --version)"
+            test "$reported" = "linear $version"
       - package-unix:
           target: x86_64-unknown-linux-gnu
 
@@ -204,7 +204,7 @@ jobs:
             $env:Path = "$env:USERPROFILE\.cargo\bin;$env:Path"
             $target = 'x86_64-pc-windows-msvc'
             cargo build --locked --release --features secure-storage --target $target
-            $binary = "target/$target/release/linear-cli.exe"
+            $binary = "target/$target/release/linear.exe"
             if (-not (Test-Path -LiteralPath $binary)) { throw "Missing binary: $binary" }
             & $binary --version
             $artifactDir = "artifacts/$target"
@@ -215,12 +215,12 @@ jobs:
             [System.IO.File]::WriteAllText((Join-Path $artifactDir 'version.txt'), "linear-cli $version")
             $stage = Join-Path $env:TEMP "linear-cli-package-$PID"
             New-Item -ItemType Directory -Force -Path $stage | Out-Null
-            Copy-Item -LiteralPath $binary -Destination (Join-Path $stage 'linear-cli.exe')
-            Compress-Archive -Path (Join-Path $stage 'linear-cli.exe') -DestinationPath "$artifactDir/linear-cli-$target.zip" -Force
+            Copy-Item -LiteralPath $binary -Destination (Join-Path $stage 'linear.exe')
+            Compress-Archive -Path (Join-Path $stage 'linear.exe') -DestinationPath "$artifactDir/linear-cli-$target.zip" -Force
             Add-Type -AssemblyName System.IO.Compression.FileSystem
             $archive = [System.IO.Compression.ZipFile]::OpenRead("$artifactDir/linear-cli-$target.zip")
             try {
-              if (($archive.Entries | ForEach-Object FullName) -ne 'linear-cli.exe') { throw 'Windows archive must contain linear-cli.exe at its root' }
+              if (($archive.Entries | ForEach-Object FullName) -ne 'linear.exe') { throw 'Windows archive must contain linear.exe at its root' }
             } finally {
               $archive.Dispose()
             }

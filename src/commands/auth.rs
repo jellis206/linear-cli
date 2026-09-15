@@ -111,7 +111,7 @@ async fn login(
         return Err(CliError::general(
             "Passing the secret via --key on the command line is disabled (it leaks into \
              shell history and process listings). Omit --key and it will be read from a \
-             hidden prompt, or piped stdin: `printf '%s\\n' \"$LINEAR_API_KEY\" | linear-cli auth login`.",
+             hidden prompt, or piped stdin: `printf '%s\\n' \"$LINEAR_API_KEY\" | linear auth login`.",
         )
         .into());
     }
@@ -575,7 +575,7 @@ async fn oauth_login(
         config::save_oauth_config_secure(&profile, &oauth_config).with_context(|| {
             format!(
                 "Secure OAuth storage failed using {}. \
-                 On macOS Keychain, unsigned local builds can fail readback — try an official release or plain `linear-cli auth oauth`.",
+                 On macOS Keychain, unsigned local builds can fail readback — try an official release or plain `linear auth oauth`.",
                 crate::keyring::backend_name()
             )
         })?;

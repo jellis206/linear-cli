@@ -2,7 +2,7 @@ use std::process::Command;
 
 /// Helper to run CLI commands and capture output
 fn run_cli(args: &[&str]) -> (i32, String, String) {
-    let output = Command::new(env!("CARGO_BIN_EXE_linear-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_linear"))
         .args(args)
         .output()
         .expect("Failed to execute command");
@@ -41,7 +41,7 @@ fn test_update_help() {
     let (code, stdout, _stderr) = run_cli(&["update", "--help"]);
     assert_eq!(code, 0);
     assert!(stdout.contains("--check"));
-    assert!(stdout.contains("linear-cli update"));
+    assert!(stdout.contains("linear update"));
 }
 
 #[test]
@@ -2267,7 +2267,7 @@ fn run_cli_isolated(args: &[&str]) -> (i32, String, String) {
     let tmp =
         std::env::temp_dir().join(format!("linear-cli-isolated-{}-{}", std::process::id(), n));
     let _ = std::fs::create_dir_all(&tmp);
-    let output = Command::new(env!("CARGO_BIN_EXE_linear-cli"))
+    let output = Command::new(env!("CARGO_BIN_EXE_linear"))
         .args(args)
         .env("HOME", &tmp)
         .env("XDG_CONFIG_HOME", &tmp)

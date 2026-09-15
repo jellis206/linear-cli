@@ -9,7 +9,7 @@ Enable tab completions for your shell.
 mkdir -p ~/.bash_completion.d
 
 # Generate and install completions
-linear-cli completions bash > ~/.bash_completion.d/linear-cli
+linear completions bash > ~/.bash_completion.d/linear-cli
 
 # Add to ~/.bashrc if not already present
 echo 'source ~/.bash_completion.d/linear-cli' >> ~/.bashrc
@@ -23,7 +23,7 @@ source ~/.bashrc
 mkdir -p ~/.zsh/completions
 
 # Generate completions
-linear-cli completions zsh > ~/.zsh/completions/_linear-cli
+linear completions zsh > ~/.zsh/completions/_linear-cli
 
 # Add to ~/.zshrc if not already present
 echo 'fpath=(~/.zsh/completions $fpath)' >> ~/.zshrc
@@ -35,14 +35,14 @@ source ~/.zshrc
 
 ```bash
 # Generate and install completions
-linear-cli completions fish > ~/.config/fish/completions/linear-cli.fish
+linear completions fish > ~/.config/fish/completions/linear-cli.fish
 ```
 
 ## PowerShell
 
 ```powershell
 # Generate completions
-linear-cli completions powershell > $HOME\linear-cli.ps1
+linear completions powershell > $HOME\linear-cli.ps1
 
 # Add to your PowerShell profile
 Add-Content $PROFILE '. $HOME\linear-cli.ps1'
