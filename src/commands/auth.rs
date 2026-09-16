@@ -55,9 +55,14 @@ pub enum AuthCommands {
         /// OAuth client ID (uses default if not specified)
         #[arg(long)]
         client_id: Option<String>,
-        /// OAuth scopes (comma-separated)
-        #[arg(long, default_value = "read,write,admin")]
+        /// OAuth scopes (comma-separated). `admin` is only needed for webhooks
+        /// and can only be granted by a workspace admin.
+        #[arg(long, default_value = "read,write")]
         scopes: String,
+        /// Also request the `admin` scope (needed for webhooks; only a
+        /// workspace admin can grant it)
+        #[arg(long)]
+        admin: bool,
         /// Port for localhost callback server
         #[arg(long, default_value = "8484")]
         port: u16,
@@ -87,9 +92,10 @@ pub async fn handle(cmd: AuthCommands, output: &OutputOptions) -> Result<()> {
         AuthCommands::Oauth {
             client_id,
             scopes,
+            admin,
             port,
             secure,
-        } => oauth_login(client_id, scopes, port, secure, output).await,
+        } => oauth_login(client_id, scopes, admin, port, secure, output).await,
         AuthCommands::Revoke { force } => revoke(force, output).await,
     }
 }
@@ -506,14 +512,25 @@ async fn migrate(keep_config: bool, force: bool, output: &OutputOptions) -> Resu
     Ok(())
 }
 
+/// Appends the `admin` scope when `--admin` is passed, unless it is already listed.
+fn with_admin(scopes: String, admin: bool) -> String {
+    if admin && !scopes.split(',').any(|s| s.trim() == "admin") {
+        format!("{},admin", scopes.trim_end_matches([',', ' ']))
+    } else {
+        scopes
+    }
+}
+
 async fn oauth_login(
     client_id: Option<String>,
     scopes: String,
+    admin: bool,
     port: u16,
     secure: bool,
     output: &OutputOptions,
 ) -> Result<()> {
     let client_id = client_id.unwrap_or_else(|| oauth::DEFAULT_CLIENT_ID.to_string());
+    let scopes = with_admin(scopes, admin);
     let redirect_uri = format!("http://localhost:{}/callback", port);
 
     // Generate PKCE challenge and state
@@ -682,4 +699,21 @@ async fn revoke(force: bool, output: &OutputOptions) -> Result<()> {
 
     println!("OAuth tokens revoked for profile '{}'", profile);
     Ok(())
+}
+
+#[cfg(test)]
+mod scope_tests {
+    use super::with_admin;
+
+    #[test]
+    fn admin_flag_appends_scope_once() {
+        assert_eq!(with_admin("read,write".into(), true), "read,write,admin");
+        assert_eq!(with_admin("read,write".into(), false), "read,write");
+        assert_eq!(
+            with_admin("read,write,admin".into(), true),
+            "read,write,admin"
+        );
+        assert_eq!(with_admin("read, admin".into(), true), "read, admin");
+        assert_eq!(with_admin("read,".into(), true), "read,admin");
+    }
 }

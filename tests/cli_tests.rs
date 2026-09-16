@@ -741,9 +741,11 @@ fn test_auth_oauth_help() {
 fn test_auth_oauth_default_scopes() {
     let (code, stdout, _stderr) = run_cli(&["auth", "oauth", "--help"]);
     assert_eq!(code, 0);
+    // `admin` is opt-in: only workspace admins can grant it, and defaulting to
+    // it blocks regular users from authenticating at all.
     assert!(
-        stdout.contains("read,write,admin"),
-        "default scopes should be read,write,admin"
+        stdout.contains("[default: read,write]"),
+        "default scopes should be read,write"
     );
 }
 
@@ -937,16 +939,6 @@ fn test_projects_list_view_flag() {
     assert!(
         stdout.contains("--view"),
         "projects list should have --view flag"
-    );
-}
-
-#[test]
-fn test_auth_oauth_default_scopes_include_admin() {
-    let (code, stdout, _stderr) = run_cli(&["auth", "oauth", "--help"]);
-    assert_eq!(code, 0);
-    assert!(
-        stdout.contains("read,write,admin"),
-        "default scopes should now include admin"
     );
 }
 
