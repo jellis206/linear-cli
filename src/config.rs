@@ -4,8 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::fs;
 use std::io::{IsTerminal, Read};
-use std::path::PathBuf;
-use std::sync::OnceLock;
+use std::path::{Path, PathBuf};
+use std::process::Command;
 
 use crate::atomic_file;
 
@@ -45,6 +45,9 @@ pub struct Config {
     pub current: Option<String>,
     #[serde(default)]
     pub workspaces: HashMap<String, Workspace>,
+    /// Private machine-local directory -> profile bindings (never credentials).
+    #[serde(default, skip_serializing_if = "HashMap::is_empty")]
+    pub directories: HashMap<PathBuf, String>,
     // Legacy field for backward compatibility
     #[serde(skip_serializing_if = "Option::is_none")]
     pub api_key: Option<String>,
@@ -104,19 +107,157 @@ pub fn save_config(config: &Config) -> Result<()> {
         .context("Failed to atomically update config file")
 }
 
-/// Resolve profile name for read/write without the process-lifetime cache used by
-/// [`current_profile`]. Prefer this when the config may still be mid-setup.
-fn resolve_profile_name(config: &Config) -> String {
-    std::env::var("LINEAR_CLI_PROFILE")
-        .ok()
-        .filter(|p| !p.is_empty())
-        .or_else(|| config.current.clone())
-        .unwrap_or_else(|| "default".to_string())
+#[derive(Debug)]
+pub struct ProfileSelection {
+    pub name: String,
+    pub source: String,
+}
+
+fn ancestor_binding<'a>(config: &'a Config, cwd: &Path) -> Option<(&'a String, PathBuf)> {
+    cwd.ancestors().find_map(|dir| {
+        config
+            .directories
+            .get(dir)
+            .map(|name| (name, dir.to_path_buf()))
+    })
+}
+
+fn original_checkout(cwd: &Path) -> Option<PathBuf> {
+    let output = Command::new("git")
+        .arg("-C")
+        .arg(cwd)
+        .args([
+            "rev-parse",
+            "--path-format=absolute",
+            "--git-common-dir",
+            "--git-dir",
+        ])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let text = String::from_utf8(output.stdout).ok()?;
+    let mut lines = text.lines();
+    let common = PathBuf::from(lines.next()?);
+    let git_dir = PathBuf::from(lines.next()?);
+    if common == git_dir || common.file_name()? != ".git" {
+        return None;
+    }
+    // Only standard linked worktrees have an unambiguous original checkout.
+    common.parent()?.canonicalize().ok()
+}
+
+fn resolve_profile_at(
+    config: &Config,
+    cwd: &Path,
+    explicit: Option<String>,
+) -> Result<ProfileSelection> {
+    if let Some(name) = explicit.filter(|p| !p.trim().is_empty()) {
+        return Ok(ProfileSelection {
+            name,
+            source: "explicit (--profile / LINEAR_CLI_PROFILE)".into(),
+        });
+    }
+    let cwd = cwd
+        .canonicalize()
+        .context("Cannot resolve working directory")?;
+    let binding = ancestor_binding(config, &cwd)
+        .map(|b| (b, false))
+        .or_else(|| {
+            original_checkout(&cwd)
+                .and_then(|original| ancestor_binding(config, &original).map(|b| (b, true)))
+        });
+    if let Some(((name, directory), inherited)) = binding {
+        if !config.workspaces.contains_key(name) {
+            anyhow::bail!("Directory binding {} selects missing profile '{}'. Re-authenticate that profile or run: linear config unbind {}", directory.display(), name, directory.display());
+        }
+        return Ok(ProfileSelection {
+            name: name.clone(),
+            source: format!(
+                "{}: {}",
+                if inherited {
+                    "original checkout"
+                } else {
+                    "directory"
+                },
+                directory.display()
+            ),
+        });
+    }
+    Ok(ProfileSelection {
+        name: config.current.clone().unwrap_or_else(|| "default".into()),
+        source: "global default".into(),
+    })
+}
+
+pub fn selected_profile() -> Result<ProfileSelection> {
+    resolve_profile_name(&load_config()?)
+}
+
+fn resolve_profile_name(config: &Config) -> Result<ProfileSelection> {
+    resolve_profile_at(
+        config,
+        &std::env::current_dir()?,
+        std::env::var("LINEAR_CLI_PROFILE").ok(),
+    )
+}
+
+pub fn directory_bind(name: &str, path: Option<PathBuf>) -> Result<()> {
+    let mut config = load_config()?;
+    if !config.workspaces.contains_key(name) {
+        anyhow::bail!(
+            "Profile '{}' not found. Create/authenticate it with --profile {} first.",
+            name,
+            name
+        );
+    }
+    let directory = path.unwrap_or(std::env::current_dir()?).canonicalize()?;
+    if !directory.is_dir() {
+        anyhow::bail!("Binding path must be a directory");
+    }
+    config
+        .directories
+        .insert(directory.clone(), name.to_string());
+    save_config(&config)?;
+    println!("Bound {} to {}", directory.display(), name);
+    Ok(())
+}
+
+pub fn directory_unbind(path: Option<PathBuf>) -> Result<()> {
+    let mut config = load_config()?;
+    let path = path.unwrap_or(std::env::current_dir()?);
+    // Permit cleanup of bindings whose directories have since been deleted.
+    let directory = path
+        .canonicalize()
+        .or_else(|_| std::path::absolute(&path))?;
+    if config.directories.remove(&directory).is_none() {
+        anyhow::bail!(
+            "No binding at {} (unbind the exact bound directory)",
+            directory.display()
+        );
+    }
+    save_config(&config)?;
+    println!("Unbound {}", directory.display());
+    Ok(())
+}
+
+pub fn directory_bindings(output: &crate::output::OutputOptions) -> Result<()> {
+    let config = load_config()?;
+    let bindings: std::collections::BTreeMap<_, _> = config.directories.into_iter().collect();
+    if output.is_json() || output.has_template() {
+        crate::output::print_json_owned(serde_json::to_value(&bindings)?, output)?;
+    } else {
+        for (directory, name) in bindings {
+            println!("{} -> {}", directory.display(), name);
+        }
+    }
+    Ok(())
 }
 
 pub fn set_api_key(key: &str) -> Result<()> {
     let mut config = load_config()?;
-    let workspace_name = resolve_profile_name(&config);
+    let workspace_name = resolve_profile_name(&config)?.name;
     let workspace = config
         .workspaces
         .entry(workspace_name.clone())
@@ -130,37 +271,38 @@ pub fn set_api_key(key: &str) -> Result<()> {
 }
 
 /// Stored default team for the active workspace (config file only; no env).
-pub fn get_stored_default_team() -> Option<String> {
-    let config = load_config().ok()?;
-    let profile = resolve_profile_name(&config);
-    config
+pub fn get_stored_default_team() -> Result<Option<String>> {
+    let config = load_config()?;
+    let profile = resolve_profile_name(&config)?.name;
+    Ok(config
         .workspaces
         .get(&profile)
         .and_then(|w| w.default_team.clone())
-        .filter(|t| !t.trim().is_empty())
+        .filter(|t| !t.trim().is_empty()))
 }
 
 /// Effective default team: `LINEAR_CLI_TEAM` env, then stored workspace default.
-pub fn get_default_team() -> Option<String> {
+pub fn get_default_team() -> Result<Option<String>> {
     if let Ok(team) = std::env::var("LINEAR_CLI_TEAM") {
         let team = team.trim().to_string();
         if !team.is_empty() {
-            return Some(team);
+            return Ok(Some(team));
         }
     }
     get_stored_default_team()
 }
 
 /// CLI `--team` / positional override, then effective default team.
-pub fn resolve_team_arg(cli: Option<String>) -> Option<String> {
-    cli.map(|t| t.trim().to_string())
-        .filter(|t| !t.is_empty())
-        .or_else(get_default_team)
+pub fn resolve_team_arg(cli: Option<String>) -> Result<Option<String>> {
+    match cli.map(|t| t.trim().to_string()).filter(|t| !t.is_empty()) {
+        Some(team) => Ok(Some(team)),
+        None => get_default_team(),
+    }
 }
 
 /// Like [`resolve_team_arg`], but errors when nothing is configured.
 pub fn require_team(cli: Option<String>) -> Result<String> {
-    resolve_team_arg(cli).ok_or_else(|| {
+    resolve_team_arg(cli)?.ok_or_else(|| {
         anyhow::anyhow!(
             "--team is required (or set a default: linear config set default-team TEAM)"
         )
@@ -170,7 +312,7 @@ pub fn require_team(cli: Option<String>) -> Result<String> {
 /// Set the default team for the current workspace. Requires an existing workspace.
 pub fn set_default_team(team: Option<&str>) -> Result<()> {
     let mut config = load_config()?;
-    let profile = resolve_profile_name(&config);
+    let profile = resolve_profile_name(&config)?.name;
     let workspace = config.workspaces.get_mut(&profile).with_context(|| {
         format!(
             "Workspace '{}' not found. Run setup or: linear config set-key first.",
@@ -229,33 +371,23 @@ pub fn get_api_key() -> Result<String> {
         }
     }
 
-    // Try keyring if feature is enabled
+    let config = load_config()?;
+    let profile = resolve_profile_name(&config)?.name;
     #[cfg(feature = "secure-storage")]
-    {
-        let config = load_config()?;
-        let profile = std::env::var("LINEAR_CLI_PROFILE")
-            .ok()
-            .filter(|p| !p.is_empty())
-            .or(config.current.clone())
-            .unwrap_or_else(|| "default".to_string());
-
-        if let Ok(Some(key)) = crate::keyring::get_key(&profile) {
+    if let Ok(Some(key)) = crate::keyring::get_key(&profile) {
+        if !key.is_empty() {
             return Ok(key);
         }
     }
-
-    // Fall back to config file
-    let config = load_config()?;
-    let profile = std::env::var("LINEAR_CLI_PROFILE")
-        .ok()
-        .filter(|p| !p.is_empty());
-    let current = profile.or(config.current.clone()).context(
-        "No workspace selected. Run: linear config workspace-add <name> or set LINEAR_CLI_PROFILE",
-    )?;
-    let workspace = config.workspaces.get(&current).context(format!(
-        "Workspace '{}' not found. Run: linear config workspace-add <name>",
-        current
-    ))?;
+    let workspace = config.workspaces.get(&profile).with_context(|| {
+        format!(
+            "Profile '{}' not found. Authenticate with: linear --profile {} auth login",
+            profile, profile
+        )
+    })?;
+    if workspace.api_key.is_empty() {
+        anyhow::bail!("Profile '{}' has no API key. Authenticate this profile; another account will not be used.", profile);
+    }
     Ok(workspace.api_key.clone())
 }
 
@@ -263,30 +395,9 @@ pub fn config_file_path() -> Result<PathBuf> {
     config_path()
 }
 
-/// Returns the current workspace profile name.
-///
-/// NOTE: The result is cached via OnceLock for the lifetime of the process.
-/// If the profile is changed in-process (e.g., via `workspace_switch`), the
-/// cached value will be stale. This is acceptable because profile switches
-/// during a single CLI invocation are not a supported use case.
+/// Resolve the effective profile, including directory and linked-worktree bindings.
 pub fn current_profile() -> Result<String> {
-    static PROFILE: OnceLock<String> = OnceLock::new();
-
-    if let Some(cached) = PROFILE.get() {
-        return Ok(cached.clone());
-    }
-
-    let config = load_config()?;
-    let profile = std::env::var("LINEAR_CLI_PROFILE")
-        .ok()
-        .filter(|p| !p.is_empty());
-    let resolved = profile
-        .or(config.current)
-        .context("No workspace selected")?;
-
-    // Store for future calls (ignore if another thread beat us)
-    let _ = PROFILE.set(resolved.clone());
-    Ok(resolved)
+    Ok(selected_profile()?.name)
 }
 
 pub fn set_workspace_key(name: &str, api_key: &str) -> Result<()> {
@@ -318,7 +429,7 @@ pub fn config_get(key: &str, raw: bool) -> Result<()> {
             println!("{}", profile);
         }
         // Stored value only — env override is separate (see show / get_default_team).
-        "default-team" | "default_team" | "team" => match get_stored_default_team() {
+        "default-team" | "default_team" | "team" => match get_stored_default_team()? {
             Some(team) => println!("{}", team),
             None => {
                 if !raw {
@@ -357,13 +468,17 @@ pub fn config_set(key: &str, value: &str) -> Result<()> {
 pub fn show_config() -> Result<()> {
     let config = load_config()?;
     let path = config_path()?;
+    let selected = resolve_profile_name(&config)?;
 
+    println!("Profile: {}", selected.name);
+    println!("Profile source: {}", selected.source);
     println!("Config file: {}", path.display());
     println!();
     println!("Known keys: {}", known_config_keys().join(", "));
     println!();
 
-    if let Some(current) = &config.current {
+    let current = &selected.name;
+    if config.workspaces.contains_key(current) {
         println!("Current workspace: {}", current);
         if let Some(workspace) = config.workspaces.get(current) {
             println!("API Key: {}", mask_api_key_for_display(&workspace.api_key));
@@ -434,7 +549,7 @@ pub fn workspace_list() -> Result<()> {
     println!();
 
     for (name, workspace) in &config.workspaces {
-        let is_current = config.current.as_ref() == Some(name);
+        let is_current = resolve_profile_name(&config)?.name == *name;
         let marker = if is_current { "*" } else { " " };
         let masked = mask_api_key_for_display(&workspace.api_key);
         println!("{} {} ({})", marker, name, masked);
@@ -465,16 +580,12 @@ pub fn workspace_switch(name: &str) -> Result<()> {
 
 pub fn workspace_current() -> Result<()> {
     let config = load_config()?;
-
-    if let Some(current) = &config.current {
-        println!("Current workspace: {}", current);
-        if let Some(workspace) = config.workspaces.get(current) {
-            println!("API Key: {}", mask_api_key_for_display(&workspace.api_key));
-        }
-    } else {
-        println!("No workspace selected. Run: linear workspace add <name>");
+    let selected = resolve_profile_name(&config)?;
+    println!("Current workspace: {}", selected.name);
+    println!("Profile source: {}", selected.source);
+    if let Some(workspace) = config.workspaces.get(&selected.name) {
+        println!("API Key: {}", mask_api_key_for_display(&workspace.api_key));
     }
-
     Ok(())
 }
 
@@ -691,6 +802,7 @@ mod tests {
             current: Some("default".to_string()),
             workspaces: HashMap::new(),
             api_key: None,
+            ..Default::default()
         };
 
         let toml_str = toml::to_string_pretty(&config).unwrap();
@@ -958,7 +1070,9 @@ mod tests {
     #[test]
     fn test_resolve_team_arg_prefers_cli() {
         assert_eq!(
-            resolve_team_arg(Some("CLI".to_string())).as_deref(),
+            resolve_team_arg(Some("CLI".to_string()))
+                .unwrap()
+                .as_deref(),
             Some("CLI")
         );
     }
@@ -966,7 +1080,7 @@ mod tests {
     #[test]
     fn test_resolve_team_arg_empty_cli_falls_through() {
         // Without env/config this is None; empty CLI must not win.
-        let result = resolve_team_arg(Some("  ".to_string()));
+        let result = resolve_team_arg(Some("  ".to_string())).unwrap();
         // May be Some if env is set in the process; never equal to whitespace.
         if let Some(t) = result {
             assert_ne!(t.trim(), "");

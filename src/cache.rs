@@ -148,7 +148,7 @@ impl Cache {
             return Ok(cached.clone());
         }
 
-        let profile = config::current_profile().unwrap_or_else(|_| "default".to_string());
+        let profile = config::current_profile()?;
         let base = dirs::config_dir().context("Could not find config directory")?;
 
         // Identity is fixed for a process invocation, so resolving + memoizing

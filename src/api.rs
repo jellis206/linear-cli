@@ -700,7 +700,11 @@ impl LinearClient {
     }
 
     pub fn with_api_key(api_key: String) -> Result<Self> {
-        let client = Client::builder()
+        let client = Client::builder();
+        // Unit tests must not depend on host proxy services (unavailable in sandboxes).
+        #[cfg(test)]
+        let client = client.no_proxy();
+        let client = client
             .timeout(Duration::from_secs(30))
             .connect_timeout(Duration::from_secs(10))
             .user_agent(format!("linear-cli/{}", env!("CARGO_PKG_VERSION")))
@@ -808,10 +812,14 @@ impl LinearClient {
 
     /// Resolve authentication from config (checks OAuth explicitly, then API key)
     fn resolve_auth() -> Result<AuthState> {
-        let profile = config::current_profile().unwrap_or_else(|_| "default".to_string());
+        // Explicit credentials override profile-based authentication, including OAuth.
+        if std::env::var("LINEAR_API_KEY").is_ok_and(|key| !key.is_empty()) {
+            return Ok(AuthState::ApiKey(config::get_api_key()?));
+        }
+        let profile = config::current_profile()?;
 
         // Check for OAuth config explicitly (no Bearer prefix heuristic)
-        if let Ok(Some(oauth)) = config::get_oauth_config(&profile) {
+        if let Some(oauth) = config::get_oauth_config(&profile)? {
             if !oauth.access_token.is_empty() {
                 // If token has a refresh_token or isn't expired, use OAuth
                 let is_expired = oauth

@@ -138,6 +138,18 @@ async fn login(
             anyhow::bail!("API key stored in keyring could not be verified after saving");
         }
 
+        // Register the profile even when its secret lives only in the keyring,
+        // so directory bindings and global selection can discover it.
+        let mut config_data = config::load_config()?;
+        config_data
+            .workspaces
+            .entry(profile.clone())
+            .or_insert_with(|| config::Workspace::with_api_key(""));
+        if config_data.current.is_none() {
+            config_data.current = Some(profile.clone());
+        }
+        config::save_config(&config_data)?;
+
         if output.is_json() || output.has_template() {
             print_json_owned(
                 json!({
@@ -232,7 +244,8 @@ async fn logout(force: bool, output: &OutputOptions) -> Result<()> {
 
 async fn status(validate: bool, output: &OutputOptions) -> Result<()> {
     let config_data = config::load_config()?;
-    let profile = config::current_profile().ok();
+    let selection = config::selected_profile()?;
+    let profile = Some(selection.name);
     let env_key = std::env::var("LINEAR_API_KEY")
         .ok()
         .filter(|k| !k.is_empty());
@@ -282,12 +295,19 @@ async fn status(validate: bool, output: &OutputOptions) -> Result<()> {
         .as_ref()
         .and_then(|p| config::get_oauth_config(p).ok())
         .flatten();
-    let auth_type = if oauth_configured { "oauth" } else { "api_key" };
-    let configured = config_file_configured || keyring_configured || oauth_configured;
+    let auth_type = if env_key.is_some() {
+        "api_key"
+    } else if oauth_configured {
+        "oauth"
+    } else {
+        "api_key"
+    };
+    let configured =
+        env_key.is_some() || config_file_configured || keyring_configured || oauth_configured;
 
     let mut validated = None;
     if validate {
-        if oauth_configured {
+        if oauth_configured && env_key.is_none() {
             // Validate OAuth by querying the viewer with the access token
             if let Some(ref oauth) = oauth_config {
                 let client = LinearClient::with_api_key(format!("Bearer {}", oauth.access_token));
@@ -331,6 +351,7 @@ async fn status(validate: bool, output: &OutputOptions) -> Result<()> {
         print_json_owned(
             json!({
                 "profile": profile,
+                "profile_source": selection.source,
                 "configured": configured,
                 "keyring_configured": keyring_configured,
                 "oauth_keyring_configured": oauth_keyring_configured,
@@ -352,6 +373,7 @@ async fn status(validate: bool, output: &OutputOptions) -> Result<()> {
         "Profile: {}",
         profile.clone().unwrap_or_else(|| "none".to_string())
     );
+    println!("Profile source: {}", selection.source);
     println!("Config file: {}", if configured { "yes" } else { "no" });
     println!("Keyring: {}", if keyring_configured { "yes" } else { "no" });
     println!(
@@ -405,13 +427,7 @@ async fn validate_key(key: &str) -> Result<()> {
 }
 
 fn resolve_profile_for_write() -> Result<String> {
-    if let Ok(profile) = std::env::var("LINEAR_CLI_PROFILE") {
-        if !profile.trim().is_empty() {
-            return Ok(profile);
-        }
-    }
-    let config_data = config::load_config()?;
-    Ok(config_data.current.unwrap_or_else(|| "default".to_string()))
+    config::current_profile()
 }
 
 #[cfg(feature = "secure-storage")]
