@@ -779,6 +779,18 @@ ENV OVERRIDES:
 
 #[derive(Subcommand)]
 pub(crate) enum ConfigCommands {
+    /// Bind a directory (default: cwd) to an existing profile
+    #[command(alias = "workspace-bind")]
+    Bind {
+        name: String,
+        path: Option<std::path::PathBuf>,
+    },
+    /// Remove the binding at this exact directory (default: cwd)
+    #[command(alias = "workspace-unbind")]
+    Unbind { path: Option<std::path::PathBuf> },
+    /// List private directory-to-profile bindings
+    #[command(alias = "workspace-bindings")]
+    Bindings,
     /// Set API key
     #[command(after_help = r#"EXAMPLE:
     printf '%s\n' "$LINEAR_API_KEY" | linear config set-key"#)]
@@ -1174,7 +1186,7 @@ async fn run_command(
         Commands::Templates { action } => templates::handle(action, output).await?,
         Commands::Time { action } => time::handle(action, output).await?,
         Commands::Uploads { action } => uploads::handle(action).await?,
-        Commands::Interactive { team } => interactive::run(config::resolve_team_arg(team)).await?,
+        Commands::Interactive { team } => interactive::run(config::resolve_team_arg(team)?).await?,
         Commands::Context => handle_context(output, agent_opts, retry).await?,
         Commands::Favorites { action } => favorites::handle(action, output).await?,
         Commands::Roadmaps { action } => {
@@ -1225,6 +1237,9 @@ async fn run_command(
         Commands::Api { action } => commands::api::handle(action, output).await?,
         Commands::Doctor { check_api, fix } => doctor::run(output, check_api, fix).await?,
         Commands::Config { action } => match action {
+            ConfigCommands::Bind { name, path } => config::directory_bind(&name, path)?,
+            ConfigCommands::Unbind { path } => config::directory_unbind(path)?,
+            ConfigCommands::Bindings => config::directory_bindings(output)?,
             ConfigCommands::SetKey => {
                 config::set_api_key_from_stdin_or_prompt()?;
                 if !agent_opts.quiet {

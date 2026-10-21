@@ -459,6 +459,26 @@ linear auth logout         # Remove stored credentials
 
 **Auth priority:** `LINEAR_API_KEY` env var > OS keyring > OAuth tokens > config file API key.
 
+### Directory-scoped accounts
+
+Keep multiple accounts as named profiles; bind a directory to select an account for all its descendants. Credentials stay in the existing private config or OS keyring, never in the repository.
+
+```bash
+linear --profile enzo auth oauth          # or: auth login (hidden API-key prompt)
+linear config bind enzo ~/dev/enzo
+linear --profile personal auth oauth
+linear config bind personal ~/dev/personal
+linear config bindings --output json     # list bindings, without credentials
+linear auth status --output json         # selected profile and profile_source
+linear config unbind ~/dev/enzo          # remove this exact binding
+```
+
+Resolution order: explicit `--profile` / `LINEAR_CLI_PROFILE`, nearest bound ancestor, original checkout's nearest bound ancestor for a linked Git worktree, then the existing global default. A binding inside the worktree's own directory tree wins over its original checkout. Paths are canonicalized, so symlinked paths select the same binding. Bindings are machine-local, stored under `[directories]` in the CLI's private config; use `config bindings` to list them rather than sharing credential files.
+
+A missing profile or missing credentials never falls back to another account. After removing a profile, re-authenticate it explicitly or unbind its directory. Login, OAuth refresh, default teams, and caches use the selected profile. `config workspace-switch` still changes only the global fallback, not directory bindings.
+
+An explicit `LINEAR_API_KEY` overrides profile credentials, including OAuth; auth status reports `env_api_key`. Clear inherited credential/profile environment overrides when relying on directory selection. Bare repositories and nonstandard separate-Git-directory layouts have no inferred original checkout; bind those worktrees explicitly.
+
 ## Configuration
 
 Config is stored at `~/.config/linear-cli/config.toml` (Linux/macOS) or `%APPDATA%\linear-cli\config.toml` (Windows).

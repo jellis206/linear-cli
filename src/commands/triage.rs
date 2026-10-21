@@ -46,7 +46,7 @@ struct TriageRow {
 pub async fn handle(cmd: TriageCommands, output: &OutputOptions) -> Result<()> {
     match cmd {
         TriageCommands::List { team } => {
-            list_triage(crate::config::resolve_team_arg(team), output).await
+            list_triage(crate::config::resolve_team_arg(team)?, output).await
         }
         TriageCommands::Claim { id } => claim_issue(&id, output).await,
         TriageCommands::Snooze { id, duration } => snooze_issue(&id, &duration, output).await,
